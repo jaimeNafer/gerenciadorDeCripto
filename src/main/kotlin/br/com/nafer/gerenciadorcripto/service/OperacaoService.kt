@@ -3,6 +3,7 @@ package br.com.nafer.gerenciadorcripto.service
 import br.com.nafer.gerenciadorcripto.clients.BinanceApiClient
 import br.com.nafer.gerenciadorcripto.clients.CoingeckoClient
 import br.com.nafer.gerenciadorcripto.domain.mappers.OperacaoMapper
+import br.com.nafer.gerenciadorcripto.domain.model.Carteira
 import br.com.nafer.gerenciadorcripto.domain.model.Corretora
 import br.com.nafer.gerenciadorcripto.domain.model.Operacoes
 import br.com.nafer.gerenciadorcripto.domain.model.Usuario
@@ -38,23 +39,20 @@ class OperacaoService(
 
     private fun processarOperacoesPendentes() {
         val operacoesComStatusPendente = operacaoRepository.findAllByStatusOperacao(StatusOperacaoEnum.PENDENTE)
-        val paresDistintos = operacoesComStatusPendente.map { Pair(it.usuario, it.corretora) }
+        val carteirasDistintas = operacoesComStatusPendente.map { it.carteira }
             .distinct()
-            paresDistintos.forEach { pair ->
-                val usuario = pair.first
-                val corretora = pair.second
-                val operacoesPendentes = operacaoRepository.findAllByUsuarioAndCorretoraAndTipoOperacaoIn(usuario, corretora, listOf(TipoOperacaoEnum.VENDA, TipoOperacaoEnum.COMPRA, TipoOperacaoEnum.PERMUTA))
+            carteirasDistintas.forEach { carteira ->
+                val operacoesPendentes = operacaoRepository.findAllByCarteiraAndTipoOperacaoIn(carteira, listOf(TipoOperacaoEnum.VENDA, TipoOperacaoEnum.COMPRA, TipoOperacaoEnum.PERMUTA))
                 val listaDeTickersPendenteAjuste = obterTickersComOperacoesPendentes(operacoesPendentes)
                 listaDeTickersPendenteAjuste.forEach { ticker ->
                     val operacoesPendente = filtrarOperacoesPorTickerDeEntradaESaida(operacoesPendentes, ticker)
-                    calcularPrecoMedioELucroPrejuizo(usuario, corretora, operacoesPendente, ticker)
+                    calcularPrecoMedioELucroPrejuizo(carteira, operacoesPendente, ticker)
                 }
             }
     }
 
     private fun calcularPrecoMedioELucroPrejuizo(
-        usuario: Usuario,
-        corretora: Corretora,
+        carteira: Carteira,
         operacoes: List<Operacoes>,
         ticker: String
     ) {
@@ -122,7 +120,7 @@ class OperacaoService(
             operacao.statusOperacao = status
         }
         operacaoRepository.saveAll(operacoes)
-        carteiraService.atualizarAtivo(usuario, corretora, ticker, quantidadeTotal, valorTotal, precoMedioTotal, lucroPrejuizoTotal)
+        carteiraService.atualizarAtivo(carteira, ticker, quantidadeTotal, valorTotal, precoMedioTotal, lucroPrejuizoTotal)
     }
 
     private fun obterTickersComOperacoesPendentes(operacoes: List<Operacoes>): List<String> {

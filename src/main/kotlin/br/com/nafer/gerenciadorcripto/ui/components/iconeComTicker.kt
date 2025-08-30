@@ -11,23 +11,18 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.painter.BitmapPainter
 import androidx.compose.ui.layout.ContentScale
-import androidx.compose.ui.res.loadImageBitmap
+
 import androidx.compose.ui.unit.dp
-import java.net.URL
+import br.com.nafer.gerenciadorcripto.services.IconeCacheService
+import org.springframework.context.ConfigurableApplicationContext
 
 @Composable
-fun IconeComTicker(url: String?, ticker: String?, cache: MutableMap<String, ImageBitmap?>, modifier: Modifier) {
-    var image by remember(url) { mutableStateOf(cache[url]) }
+fun IconeComTicker(url: String?, ticker: String?, cacheService: IconeCacheService, modifier: Modifier) {
+    var image by remember(url) { mutableStateOf<ImageBitmap?>(null) }
 
     LaunchedEffect(url) {
-        if (url != null && cache[url] == null) {
-            runCatching {
-                val bytes = URL(url).readBytes()
-                loadImageBitmap(bytes.inputStream())
-            }.onSuccess {
-                cache[url] = it
-                image = it
-            }
+        if (url != null) {
+            image = cacheService.obterIcone(url)
         }
     }
 

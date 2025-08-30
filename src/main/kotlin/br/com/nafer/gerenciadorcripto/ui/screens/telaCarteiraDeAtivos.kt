@@ -25,6 +25,7 @@ import br.com.nafer.gerenciadorcripto.ui.components.ResumoCarteira
 import br.com.nafer.gerenciadorcripto.ui.components.graficoEvolucaoPatrimonioChart
 import br.com.nafer.gerenciadorcripto.ui.components.listagemAtivos
 import br.com.nafer.gerenciadorcripto.ui.viewmodel.OperacaoViewModel
+import br.com.nafer.gerenciadorcripto.services.IconeCacheService
 import org.springframework.context.ConfigurableApplicationContext
 import java.math.BigDecimal
 import java.net.URL
@@ -46,7 +47,7 @@ data class HistoricoMensalDTO(
 data class AtivoCarteiraDTO(
     val ticker: String,
     val nome: String,
-    val icone: String,
+    val icone: String?,
     val quantidade: BigDecimal,
     val valorAtual: BigDecimal,
     val valorInvestido: BigDecimal,
@@ -97,8 +98,10 @@ fun TelaDeCarteira(
     historico: List<HistoricoMensalDTO>,
     moedas: List<AtivoCarteiraDTO>,
     onNovaOperacao: (moeda: AtivoCarteiraDTO) -> Unit,
-    onVerOperacoes: (moeda: AtivoCarteiraDTO) -> Unit
+    onVerOperacoes: (moeda: AtivoCarteiraDTO) -> Unit,
+    context: ConfigurableApplicationContext
 ) {
+    val cacheService = context.getBean(IconeCacheService::class.java)
     LazyColumn(modifier = Modifier.fillMaxSize()) {
         item {
             ResumoCarteira(
@@ -118,7 +121,8 @@ fun TelaDeCarteira(
             listagemAtivos(
                 ativos = moedas,
                 onNovaOperacao = onNovaOperacao,
-                onEditarOperacao = onVerOperacoes
+                onEditarOperacao = onVerOperacoes,
+                cacheService = cacheService
             )
         }
     }
@@ -164,7 +168,8 @@ fun TelaDeCarteiraPreview(applicationContext: ConfigurableApplicationContext) {
         historico = historico,
         moedas = ativos,
         onNovaOperacao = {},
-        onVerOperacoes = {}
+        onVerOperacoes = {},
+        context = applicationContext
     )
 }
 

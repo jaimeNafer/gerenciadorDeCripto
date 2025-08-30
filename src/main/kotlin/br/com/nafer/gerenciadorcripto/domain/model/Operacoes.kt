@@ -16,12 +16,8 @@ data class Operacoes(
     val idOperacao: Int? = null,
 
     @ManyToOne
-    @JoinColumn(name = "id_usuario", nullable = false)
-    val usuario: Usuario,
-
-    @ManyToOne
-    @JoinColumn(name = "id_corretora", nullable = false)
-    val corretora: Corretora,
+    @JoinColumn(name = "id_carteira", nullable = false)
+    val carteira: Carteira,
 
     @ManyToOne
     @JoinColumn(name = "id_finalidade", nullable = false)
@@ -59,9 +55,6 @@ data class Operacoes(
 
     @Column(name = "destino", length = 100)
     val destino: String? = null,
-
-    @Column(name = "wallet", length = 50)
-    val wallet: String? = null,
 
     @Column(name = "taxa_quantidade", precision = 19, scale = 4)
     val taxaQuantidade: BigDecimal? = null,

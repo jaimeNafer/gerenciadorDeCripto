@@ -5,6 +5,7 @@ import java.math.BigDecimal
 import java.time.LocalDateTime
 
 data class OperacoesDTO(
+    val carteira: CarteiraDTO,
     val finalidade: FinalidadesDTO,
     val dataOperacaoEntrada: LocalDateTime?,
     val moedaEntrada: MoedaDTO?,

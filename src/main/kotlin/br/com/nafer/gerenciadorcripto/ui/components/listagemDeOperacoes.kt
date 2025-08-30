@@ -20,16 +20,19 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
+import br.com.nafer.gerenciadorcripto.ui.components.IconeComTickerENome
+import br.com.nafer.gerenciadorcripto.ui.components.TipoComOperacao
 import br.com.nafer.gerenciadorcripto.domain.model.enums.TipoOperacaoEnum
 import br.com.nafer.gerenciadorcripto.dtos.ListagemDeOperacoesDTO
+import br.com.nafer.gerenciadorcripto.services.IconeCacheService
+import org.springframework.context.ConfigurableApplicationContext
 import java.math.BigDecimal
 
 @Composable
-fun listagemDeOperacoes(operacoes: List<ListagemDeOperacoesDTO>) {
+fun listagemDeOperacoes(operacoes: List<ListagemDeOperacoesDTO>, cacheService: IconeCacheService) {
     val groupedByMonth = operacoes.groupBy { mov ->
         "${mov.dataOperacao.month.value}/${mov.dataOperacao.year}"
     }
-    val imageCache = remember { mutableMapOf<String, ImageBitmap?>() }
 
     // Map para guardar o estado de expandido de cada mês
     val expandedStates = remember { mutableStateMapOf<String, Boolean>() }
@@ -87,7 +90,6 @@ fun listagemDeOperacoes(operacoes: List<ListagemDeOperacoesDTO>) {
                             ) {
                                 Text("Data", Modifier.weight(1f))
                                 Text("Operação", Modifier.weight(1f))
-                                Text("Tipo", Modifier.weight(1f))
                                 Text("Moeda Entrada", Modifier.weight(1f))
                                 Text("Qtd Entrada", Modifier.weight(1f))
                                 Text("Moeda Saída", Modifier.weight(1f))
@@ -105,11 +107,10 @@ fun listagemDeOperacoes(operacoes: List<ListagemDeOperacoesDTO>) {
                                             .padding(vertical = 4.dp, horizontal = 8.dp)
                                     ) {
                                         Text(Formatador.formatarData(mov.dataOperacao), Modifier.weight(1f))
-                                        Text(mov.finalidade ?: "DESCONHECIDA", Modifier.weight(1f))
-                                        Text(mov.tipoOperacao.descricao, Modifier.weight(1f))
-                                        IconeComTicker(mov.iconeAtivoEntrada, mov.ativoEntrada, imageCache, Modifier.weight(1f))
+                                        TipoComOperacao(mov.tipo, mov.operacao, Modifier.weight(1f))
+                                        IconeComTickerENome(mov.iconeAtivoEntrada, mov.ativoEntrada, mov.nomeAtivoEntrada, cacheService, Modifier.weight(1f))
                                         Text(Formatador.formatarQuantidade(mov.quantidadeEntrada), Modifier.weight(1f))
-                                        IconeComTicker(mov.iconeAtivoSaida, mov.ativoSaida, imageCache, Modifier.weight(1f))
+                                        IconeComTickerENome(mov.iconeAtivoSaida, mov.ativoSaida, mov.nomeAtivoSaida, cacheService, Modifier.weight(1f))
                                         Text(Formatador.formatarQuantidade(mov.quantidadeSaida), Modifier.weight(1f))
                                         Text(Formatador.formatarMoeda(mov.valorBrl), Modifier.weight(1f))
                                         Text(Formatador.formatarMoeda(mov.lucroPrejuizo), Modifier.weight(1f))

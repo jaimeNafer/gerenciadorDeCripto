@@ -18,12 +18,15 @@ class OperacaoViewModel(private val operacaoService: OperacaoService) {
             dataOperacao!!,
             operacao.moedaEntrada?.ticker,
             operacao.moedaEntrada?.icone,
+            operacao.moedaEntrada?.nome,
             operacao.quantidadeEntrada,
             operacao.moedaSaida?.ticker,
             operacao.moedaSaida?.icone,
+            operacao.moedaSaida?.nome,
             operacao.quantidadeSaida,
             operacao.valorBrl,
             operacao.lucroPrejuizo,
+            operacao.tipoOperacao.descricao,
             operacao.finalidade.descricao,
             operacao.tipoOperacao
         )

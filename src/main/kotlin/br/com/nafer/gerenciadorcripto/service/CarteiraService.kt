@@ -25,13 +25,12 @@ class CarteiraService(
 
             usuario?.isNotEmpty() == true -> carteiraRepository.filtrarAtivosPorUsuarios(usuario)
             corretora?.isNotEmpty() == true -> carteiraRepository.filtrarAtivosPorCorretoras(corretora)
-            else -> emptyList()
+            else -> carteiraRepository.findAll()
         }
     }
 
     fun atualizarAtivo(
-        usuario: Usuario,
-        corretora: Corretora,
+        carteira: Carteira,
         ticker: String,
         quantidadeTotal: BigDecimal,
         valorTotal: BigDecimal,
@@ -39,12 +38,6 @@ class CarteiraService(
         lucroPrejuizoTotal: BigDecimal,
     ) {
         val moeda = moedaService.obterMoedaPorTicker(ticker)
-        val carteira = carteiraRepository.filtrarCarteiraPorUsuarioECorretora(usuario, corretora) ?: run {
-            criarCarteira(
-                usuario,
-                corretora
-            )
-        }
 
         val ativo = ativosRepository.findByCarteiraAndMoeda(carteira, moeda)?.let {
             it.copy(
@@ -68,6 +61,10 @@ class CarteiraService(
 
     private fun criarCarteira(usuario: Usuario, corretora: Corretora): Carteira {
         return carteiraRepository.save(Carteira(usuario = usuario, corretora = corretora))
+    }
+
+    fun obterAtivosPorCarteira(carteira: Carteira): List<Ativos> {
+        return ativosRepository.findByCarteira(carteira)
     }
 
     private fun criarAtivo(carteira: Carteira) {

@@ -3,6 +3,7 @@ package br.com.nafer.gerenciadorcripto.service
 import br.com.nafer.gerenciadorcripto.clients.CoingeckoClient
 import br.com.nafer.gerenciadorcripto.domain.mappers.OperacaoMapper
 import br.com.nafer.gerenciadorcripto.domain.model.Arquivo
+import br.com.nafer.gerenciadorcripto.domain.model.Carteira
 import br.com.nafer.gerenciadorcripto.domain.model.Corretora
 import br.com.nafer.gerenciadorcripto.domain.model.Operacoes
 import br.com.nafer.gerenciadorcripto.domain.model.Usuario
@@ -11,6 +12,7 @@ import br.com.nafer.gerenciadorcripto.domain.model.enums.FinalidadeOperacaoEnum
 import br.com.nafer.gerenciadorcripto.domain.model.enums.TipoOperacaoEnum
 import br.com.nafer.gerenciadorcripto.dtos.binance.ArquivoDTO
 import br.com.nafer.gerenciadorcripto.dtos.binance.CsvBinanceDTO
+import br.com.nafer.gerenciadorcripto.infrastructure.repository.CarteiraRepository
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.CorretoraRepository
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.OperacaoRepository
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.UsuarioRepository
@@ -28,6 +30,7 @@ class ImportacaoService(
     private val finalidadesService: FinalidadesService,
     private val corretoraRepository: CorretoraRepository,
     private val usuarioRepository: UsuarioRepository,
+    private val carteiraRepository: CarteiraRepository,
     private val moedaService: MoedaService,
     private val coingeckoClient: CoingeckoClient,
     private val carteiraService: CarteiraService,
@@ -41,14 +44,15 @@ class ImportacaoService(
     ) {
         val usuario = usuarioRepository.findById(idUsuario).orElseThrow { RuntimeException("Usuario não encontrado") }
         val corretora = corretoraRepository.findById(idCorretora).orElseThrow { RuntimeException("Corretora não encontrada") }
+        val carteira = carteiraRepository.filtrarCarteiraPorUsuarioECorretora(usuario, corretora)
+            ?: carteiraRepository.save(Carteira(usuario = usuario, corretora = corretora))
         val arquivo = arquivoService.salvar(usuario, corretora, arquivoDTO)
 
         val listaDeRegistros = carregar(arquivoDTO, CsvBinanceDTO::class.java)
 
         val operacoes = obterOperacoes(
             listaDeRegistros,
-            usuario,
-            corretora,
+            carteira,
             arquivo
         )
         operacaoRepository.saveAll(operacoes)
@@ -63,42 +67,39 @@ class ImportacaoService(
 
     private fun obterOperacoes(
         listaDeRegistros: List<CsvBinanceDTO>,
-        usuario: Usuario,
-        corretora: Corretora,
+        carteira: Carteira,
         arquivo: Arquivo,
     ): List<Operacoes> {
 
         val operacoes = FinalidadeOperacaoEnum.values()
-            .flatMap { finalidade -> filtrarOperacaoPorFinalidade(listaDeRegistros, corretora, finalidade) }
+            .flatMap { finalidade -> filtrarOperacaoPorFinalidade(listaDeRegistros, carteira.corretora, finalidade) }
         return operacoes.map { registroEmPares ->
-            val finalidade = finalidadesService.obterFinalidadePorCorretoraENome(corretora, registroEmPares.finalidade)
+            val finalidade = finalidadesService.obterFinalidadePorCorretoraENome(carteira.corretora, registroEmPares.finalidade)
             val moedaEntrada =
                 registroEmPares.entrada?.let { regEntrada -> moedaService.obterMoedaPorTicker(regEntrada.coin) }
             val moedaSaida = registroEmPares.saida?.let { regSaida -> moedaService.obterMoedaPorTicker(regSaida.coin) }
             Operacoes(
-                null,
-                usuario,
-                corretora,
-                finalidade,
-                arquivo,
-                registroEmPares.entrada?.utcTime,
-                moedaEntrada,
-                registroEmPares.entrada?.change,
-                registroEmPares.saida?.utcTime,
-                moedaSaida,
-                registroEmPares.saida?.change,
-                BigDecimal.ZERO,
-                BigDecimal.ZERO,
-                null,
-                null,
-                null,
-                null,
-                null,
-                LocalDateTime.now(),
-                false,
-                "ARQUIVO",
-                null,
-                registroEmPares.tipoOperacao
+                idOperacao = null,
+                carteira = carteira,
+                finalidade = finalidade,
+                arquivo = arquivo,
+                dataOperacaoEntrada = registroEmPares.entrada?.utcTime,
+                moedaEntrada = moedaEntrada,
+                quantidadeEntrada = registroEmPares.entrada?.change,
+                dataOperacaoSaida = registroEmPares.saida?.utcTime,
+                moedaSaida = moedaSaida,
+                quantidadeSaida = registroEmPares.saida?.change,
+                valorBrl = BigDecimal.ZERO,
+                lucroPrejuizo = BigDecimal.ZERO,
+                destino = null,
+                taxaQuantidade = null,
+                taxaMoeda = null,
+                taxaValorBrl = null,
+                dataCriacao = LocalDateTime.now(),
+                excluido = false,
+                origemRegistro = "ARQUIVO",
+                observacao = null,
+                tipoOperacao = registroEmPares.tipoOperacao
             )
         }
     }

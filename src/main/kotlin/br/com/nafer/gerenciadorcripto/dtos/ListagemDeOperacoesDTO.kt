@@ -8,12 +8,15 @@ data class ListagemDeOperacoesDTO(
     val dataOperacao: LocalDateTime,
     val ativoEntrada: String?,
     val iconeAtivoEntrada: String?,
+    val nomeAtivoEntrada: String?,
     val quantidadeEntrada: BigDecimal?,
     val ativoSaida: String?,
     val iconeAtivoSaida: String?,
+    val nomeAtivoSaida: String?,
     val quantidadeSaida: BigDecimal?,
     val valorBrl: BigDecimal? = null,
     val lucroPrejuizo: BigDecimal? = null,
-    val finalidade: String?,
+    val tipo: String?,
+    val operacao: String?,
     val tipoOperacao: TipoOperacaoEnum
 )

@@ -10,6 +10,7 @@ import androidx.compose.ui.unit.dp
 import br.com.nafer.gerenciadorcripto.dtos.binance.ArquivoDTO
 import br.com.nafer.gerenciadorcripto.dtos.binance.CorretoraDTO
 import br.com.nafer.gerenciadorcripto.dtos.binance.UsuarioDTO
+import br.com.nafer.gerenciadorcripto.ui.components.common.WindowInfo
 import br.com.nafer.gerenciadorcripto.ui.components.listagemArquivosImportados
 import br.com.nafer.gerenciadorcripto.ui.components.modalImportacaoCSV
 import br.com.nafer.gerenciadorcripto.ui.viewmodel.ArquivoViewModel
@@ -18,7 +19,7 @@ import br.com.nafer.gerenciadorcripto.ui.viewmodel.OperacaoViewModel
 import org.springframework.context.ConfigurableApplicationContext
 
 @Composable
-fun telaDeImportacaoCsv(applicationContext: ConfigurableApplicationContext) {
+fun telaDeImportacaoCsv(applicationContext: ConfigurableApplicationContext, windowInfo: WindowInfo) {
     val arquivoViewModel = applicationContext.getBean(ArquivoViewModel::class.java)
     val operacaoViewModel = applicationContext.getBean(OperacaoViewModel::class.java)
     val importacaoViewModel = applicationContext.getBean(ImportacaoViewModel::class.java)

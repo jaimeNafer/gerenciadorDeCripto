@@ -13,6 +13,11 @@ import com.netguru.multiplatform.charts.bar.BarChartEntry
 
 @Composable
 fun graficoEvolucaoPatrimonioChart(data: List<HistoricoMensalDTO>) {
+    // Verifica se há dados para exibir
+    if (data.isEmpty()) {
+        return
+    }
+    
     val entries = data.map {
         val investido = it.valorTotal.toFloat() * 0.75f
         val ganho = it.valorTotal.toFloat() * 0.25f

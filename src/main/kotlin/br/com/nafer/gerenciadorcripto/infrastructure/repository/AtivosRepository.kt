@@ -9,4 +9,5 @@ import org.springframework.stereotype.Repository
 @Repository
 interface AtivosRepository : JpaRepository<Ativos, Int> {
     fun findByCarteiraAndMoeda(carteira: Carteira, moeda: Moeda): Ativos?
+    fun findByCarteira(carteira: Carteira): List<Ativos>
 }

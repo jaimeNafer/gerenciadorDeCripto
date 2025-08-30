@@ -20,19 +20,25 @@ fun AppDrawer(
         Text("Menu", style = MaterialTheme.typography.h5)
         Spacer(modifier = Modifier.height(16.dp))
         Screen.values().forEach { screen ->
-            Row(
-                modifier = Modifier.fillMaxWidth().clickable { onDestinationClicked(screen) }.padding(8.dp),
-                verticalAlignment = Alignment.CenterVertically
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .clickable { onDestinationClicked(screen) }
+                    .padding(vertical = 8.dp, horizontal = 4.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                Icon(screen.icone, contentDescription = screen.title)
-                Spacer(modifier = Modifier.width(8.dp))
+                Icon(
+                    imageVector = screen.icone, 
+                    contentDescription = screen.title,
+                    modifier = Modifier.size(24.dp)
+                )
+                Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = screen.title,
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onDestinationClicked(screen) }
-                        .padding(8.dp),
-                    color = if (screen == currentScreen) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface
+                    color = if (screen == currentScreen) MaterialTheme.colors.primary else MaterialTheme.colors.onSurface,
+                    style = MaterialTheme.typography.caption,
+                    maxLines = 2,
+                    modifier = Modifier.padding(horizontal = 4.dp)
                 )
             }
         }
