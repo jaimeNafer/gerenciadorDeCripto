@@ -1,3 +1,6 @@
+GerenciadorDeCriptoAngular/
+cache_icones/
+.output.log
 .gradle
 build/
 !gradle/wrapper/gradle-wrapper.jar
