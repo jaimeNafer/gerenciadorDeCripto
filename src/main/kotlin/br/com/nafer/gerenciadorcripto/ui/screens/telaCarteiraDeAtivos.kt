@@ -22,7 +22,7 @@ import androidx.compose.ui.graphics.toComposeImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.unit.dp
 import br.com.nafer.gerenciadorcripto.ui.components.ResumoCarteira
-import br.com.nafer.gerenciadorcripto.ui.components.graficoEvolucaoPatrimonioChart
+// import br.com.nafer.gerenciadorcripto.ui.components.graficoEvolucaoPatrimonioChart // Removido - usando KoalaPlot agora
 import br.com.nafer.gerenciadorcripto.ui.components.listagemAtivos
 import br.com.nafer.gerenciadorcripto.ui.viewmodel.OperacaoViewModel
 import br.com.nafer.gerenciadorcripto.services.IconeCacheService
@@ -112,7 +112,15 @@ fun TelaDeCarteira(
             )
             Spacer(Modifier.height(16.dp))
             Card(elevation = 4.dp, modifier = Modifier.fillMaxWidth().height(220.dp)) {
-                graficoEvolucaoPatrimonioChart(historico)
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        text = "Gráfico será implementado com KoalaPlot",
+                        style = MaterialTheme.typography.body2
+                    )
+                }
             }
         }
         item {

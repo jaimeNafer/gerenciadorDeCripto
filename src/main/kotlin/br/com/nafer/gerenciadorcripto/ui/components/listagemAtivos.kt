@@ -33,7 +33,7 @@ fun listagemAtivos(
                 modifier = Modifier
                     .fillMaxWidth()
                     .background(Color(0xFFEFEFEF))
-                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                    .padding(vertical = 6.dp, horizontal = 8.dp),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
                 Text("Ativo", modifier = Modifier.weight(2f))
@@ -42,7 +42,7 @@ fun listagemAtivos(
                 Text("Preço Atual", modifier = Modifier.weight(1f))
                 Text("Investido", modifier = Modifier.weight(1f))
                 Text("Lucro/Prejuízo", modifier = Modifier.weight(1f))
-                Spacer(modifier = Modifier.width(32.dp))
+                Spacer(modifier = Modifier.width(16.dp))
             }
             Divider(color = Color.LightGray, thickness = 1.dp)
         }
@@ -55,7 +55,7 @@ fun listagemAtivos(
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 12.dp, horizontal = 16.dp),
+                        .padding(vertical = 6.dp, horizontal = 8.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Row(
@@ -68,7 +68,7 @@ fun listagemAtivos(
                             cacheService = cacheService,
                             modifier = Modifier.size(24.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
+                        Spacer(modifier = Modifier.width(4.dp))
                         Column {
                             Text(ativo.ticker, style = MaterialTheme.typography.body2)
                             Text(ativo.nome, fontSize = 11.sp, color = Color.Gray)

@@ -2,11 +2,13 @@ package br.com.nafer.gerenciadorcripto.ui.components
 
 import Formatador
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.selection.SelectionContainer
 import androidx.compose.material.Divider
@@ -18,14 +20,10 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.unit.dp
-import br.com.nafer.gerenciadorcripto.ui.components.IconeComTickerENome
-import br.com.nafer.gerenciadorcripto.ui.components.TipoComOperacao
 import br.com.nafer.gerenciadorcripto.domain.model.enums.TipoOperacaoEnum
 import br.com.nafer.gerenciadorcripto.dtos.ListagemDeOperacoesDTO
 import br.com.nafer.gerenciadorcripto.services.IconeCacheService
-import org.springframework.context.ConfigurableApplicationContext
 import java.math.BigDecimal
 
 @Composable
@@ -154,5 +152,223 @@ fun corDeFundoParaOperacao(tipo: TipoOperacaoEnum): Color {
         TipoOperacaoEnum.VENDA -> Color(0xFFF3E5F5)
         TipoOperacaoEnum.PERMUTA -> Color(0xFFFFF9C4)
         else -> Color(0xFFF5F5F5)
+    }
+}
+
+private fun corDeFundoParaOperacao(operacao: String): Color {
+    return when (operacao.lowercase()) {
+        "compra" -> Color(0xFF4CAF50).copy(alpha = 0.1f) // Verde claro
+        "venda" -> Color(0xFFF44336).copy(alpha = 0.1f) // Vermelho claro
+        "saque" -> Color(0xFFFF9800).copy(alpha = 0.1f) // Laranja claro
+        "depósito" -> Color(0xFF2196F3).copy(alpha = 0.1f) // Azul claro
+        else -> Color.Transparent
+    }
+}
+
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+fun listagemDeOperacoesComCabecalhoFixo(
+    operacoes: List<ListagemDeOperacoesDTO>,
+    cacheService: IconeCacheService
+) {
+    val groupedByMonth = operacoes.groupBy { mov ->
+        "${mov.dataOperacao.month.value}/${mov.dataOperacao.year}"
+    }
+    val expandedStates = remember { mutableStateMapOf<String, Boolean>() }
+    
+    // Calcular totais gerais
+    val totalGeralLucroPrejuizo = operacoes.sumOf { it.lucroPrejuizo ?: BigDecimal.ZERO }
+    val totalGeralMovimentado = operacoes.sumOf { it.valorBrl ?: BigDecimal.ZERO }
+    val totalGeralOperacoes = operacoes.size
+    val necessitaIN1888Geral = totalGeralMovimentado.compareTo(BigDecimal("35000")) >= 0
+    
+    LazyColumn(
+        modifier = Modifier.fillMaxSize(),
+        verticalArrangement = Arrangement.spacedBy(2.dp)
+    ) {
+        // Cabeçalho fixo consolidado geral
+        stickyHeader {
+            Column(
+                 modifier = Modifier
+                     .fillMaxWidth()
+                     .background(Color(0xFFE3F2FD))
+                     .padding(12.dp)
+             ) {
+                Text(
+                    text = "📊 Consolidado Geral",
+                    style = MaterialTheme.typography.h6,
+                    color = MaterialTheme.colors.primary
+                )
+
+                Column(modifier = Modifier.padding(top = 6.dp)) {
+                    Text(
+                        text = "Lucro/Prejuízo: ${Formatador.formatarMoeda(totalGeralLucroPrejuizo)}",
+                        style = MaterialTheme.typography.body2,
+                        color = if (totalGeralLucroPrejuizo.compareTo(BigDecimal.ZERO) >= 0) Color(0xFF4CAF50) else Color(0xFFF44336)
+                    )
+                    Text(
+                        text = "Total movimentado: ${Formatador.formatarMoeda(totalGeralMovimentado)}",
+                        style = MaterialTheme.typography.body2
+                    )
+                    Text(
+                        text = "IN1888 necessária: ${if (necessitaIN1888Geral) "SIM" else "NÃO"}",
+                        style = MaterialTheme.typography.body2
+                    )
+                    Text(
+                        text = "Total operações: $totalGeralOperacoes",
+                        style = MaterialTheme.typography.body2
+                    )
+                }
+            }
+        }
+        
+        // Conteúdo das operações agrupadas por mês
+        groupedByMonth.forEach { (mesAno, operacoesDoMes) ->
+            // Lista de operações do mês
+                // Cabeçalho fixo da tabela
+                stickyHeader {
+                    Column {
+                        // Cabeçalho do mês (não fixo)
+                        Row {
+                            val isExpanded = expandedStates[mesAno] ?: true
+                            val totalLucroPrejuizo = operacoesDoMes.sumOf { it.lucroPrejuizo ?: BigDecimal.ZERO }
+                            val totalMovimentado = operacoesDoMes.sumOf { it.valorBrl ?: BigDecimal.ZERO }
+                            val totalOperacoes = operacoesDoMes.size
+                            val necessitaIN1888 = totalMovimentado.compareTo(BigDecimal("35000")) >= 0
+
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .background(Color(0xFFEEEEEE))
+                                    .clickable { expandedStates[mesAno] = !isExpanded }
+                                    .padding(12.dp)
+                            ) {
+                                Row(
+                                    modifier = Modifier.fillMaxWidth(),
+                                    horizontalArrangement = Arrangement.SpaceBetween,
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Text(
+                                        text = "📅 ${formatarMesAno(mesAno)}",
+                                        style = MaterialTheme.typography.h6,
+                                        color = MaterialTheme.colors.primary
+                                    )
+                                    Text(
+                                        text = if (isExpanded) "˄" else "˅",
+                                        style = MaterialTheme.typography.h5,
+                                        color = MaterialTheme.colors.primary
+                                    )
+                                }
+
+                                // Informações consolidadas do mês
+                                if (isExpanded) {
+                                    Column(modifier = Modifier.padding(top = 6.dp)) {
+                                        Text(
+                                            text = "Lucro/Prejuízo: ${Formatador.formatarMoeda(totalLucroPrejuizo)}",
+                                            style = MaterialTheme.typography.body2,
+                                            color = if (totalLucroPrejuizo.compareTo(BigDecimal.ZERO) >= 0) Color(
+                                                0xFF4CAF50
+                                            ) else Color(0xFFF44336)
+                                        )
+                                        Text(
+                                            text = "Total movimentado: ${Formatador.formatarMoeda(totalMovimentado)}",
+                                            style = MaterialTheme.typography.body2
+                                        )
+                                        Text(
+                                            text = "IN1888 necessária: ${if (necessitaIN1888) "SIM" else "NÃO"}",
+                                            style = MaterialTheme.typography.body2
+                                        )
+                                        Text(
+                                            text = "Total operações: $totalOperacoes",
+                                            style = MaterialTheme.typography.body2
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFDDDDDD))
+                                .padding(vertical = 6.dp, horizontal = 6.dp)
+                        ) {
+                            Text("Data", Modifier.weight(0.8f), style = MaterialTheme.typography.subtitle2)
+                            Text("Operação", Modifier.weight(0.8f), style = MaterialTheme.typography.subtitle2)
+                            Text("Moeda Entrada", Modifier.weight(1f), style = MaterialTheme.typography.subtitle2)
+                            Text("Qtd Entrada", Modifier.weight(0.8f), style = MaterialTheme.typography.subtitle2)
+                            Text("Moeda Saída", Modifier.weight(1f), style = MaterialTheme.typography.subtitle2)
+                            Text("Qtd Saída", Modifier.weight(0.8f), style = MaterialTheme.typography.subtitle2)
+                            Text("Valor (BRL)", Modifier.weight(0.9f), style = MaterialTheme.typography.subtitle2)
+                            Text("Lucro/Prejuízo", Modifier.weight(0.9f), style = MaterialTheme.typography.subtitle2)
+                        }
+                    }
+                }
+                items(operacoesDoMes) { operacao ->
+                    SelectionContainer {
+                        Row(
+                             modifier = Modifier
+                                 .fillMaxWidth()
+                                 .background(corDeFundoParaOperacao(operacao.tipoOperacao))
+                                 .padding(vertical = 3.dp, horizontal = 6.dp)
+                         ) {
+                             Text(
+                                 text = Formatador.formatarData(operacao.dataOperacao),
+                                 style = MaterialTheme.typography.body2,
+                                 modifier = Modifier.weight(0.8f)
+                             )
+                             
+                             TipoComOperacao(
+                                 tipo = operacao.tipo,
+                                 operacao = operacao.operacao,
+                                 modifier = Modifier.weight(0.8f)
+                             )
+                             
+                             IconeComTickerENome(
+                                 url = operacao.iconeAtivoEntrada,
+                                 ticker = operacao.ativoEntrada,
+                                 nome = operacao.nomeAtivoEntrada,
+                                 cacheService = cacheService,
+                                 modifier = Modifier.weight(1f)
+                             )
+                             
+                             Text(
+                                 text = Formatador.formatarQuantidade(operacao.quantidadeEntrada),
+                                 style = MaterialTheme.typography.body2,
+                                 modifier = Modifier.weight(0.8f)
+                             )
+                             
+                             IconeComTickerENome(
+                                 url = operacao.iconeAtivoSaida,
+                                 ticker = operacao.ativoSaida,
+                                 nome = operacao.nomeAtivoSaida,
+                                 cacheService = cacheService,
+                                 modifier = Modifier.weight(1f)
+                             )
+                             
+                             Text(
+                                 text = Formatador.formatarQuantidade(operacao.quantidadeSaida),
+                                 style = MaterialTheme.typography.body2,
+                                 modifier = Modifier.weight(0.8f)
+                             )
+                             
+                             Text(
+                                 text = Formatador.formatarMoeda(operacao.valorBrl),
+                                 style = MaterialTheme.typography.body2,
+                                 modifier = Modifier.weight(0.9f)
+                             )
+                             
+                             Text(
+                                 text = Formatador.formatarMoeda(operacao.lucroPrejuizo),
+                                 style = MaterialTheme.typography.body2,
+                                 color = if ((operacao.lucroPrejuizo?.compareTo(BigDecimal.ZERO) ?: -1) >= 0) Color(0xFF4CAF50) else Color(0xFFF44336),
+                                 modifier = Modifier.weight(0.9f)
+                             )
+                         }
+                    }
+                    Divider()
+                }
+
+        }
     }
 }

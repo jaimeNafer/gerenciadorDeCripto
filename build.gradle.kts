@@ -19,8 +19,9 @@ version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
-    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
     google()
+    maven("https://maven.pkg.jetbrains.space/public/p/compose/dev")
+    maven("https://jogamp.org/deployment/maven")
 }
 
 dependencies {
@@ -47,7 +48,7 @@ dependencies {
 
     implementation("org.mapstruct:mapstruct:1.5.5.Final")
     kapt("org.mapstruct:mapstruct-processor:1.5.5.Final")
-    implementation("com.netguru.multiplatform-charts:multiplatform-charts-desktop:1.0.0")
+    // Removendo dependências de gráficos externas - usando Canvas nativo
 }
 
 kapt {
@@ -56,7 +57,7 @@ kapt {
 
 compose.desktop {
     application {
-        mainClass = "MainKt"
+        mainClass = "br.com.nafer.gerenciadorcripto.MainKt"
 
         nativeDistributions {
             targetFormats(TargetFormat.Dmg, TargetFormat.Msi, TargetFormat.Deb)

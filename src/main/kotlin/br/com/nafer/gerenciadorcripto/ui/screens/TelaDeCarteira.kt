@@ -24,7 +24,8 @@ import br.com.nafer.gerenciadorcripto.navigation.Route
 import br.com.nafer.gerenciadorcripto.ui.base.UiState
 import br.com.nafer.gerenciadorcripto.ui.components.ResumoCarteira
 import br.com.nafer.gerenciadorcripto.ui.components.common.*
-import br.com.nafer.gerenciadorcripto.ui.components.graficoEvolucaoPatrimonioChart
+import br.com.nafer.gerenciadorcripto.ui.components.KoalaPlotPatrimonio
+import br.com.nafer.gerenciadorcripto.service.EvolucaoPatrimonioService
 import br.com.nafer.gerenciadorcripto.ui.components.listagemAtivos
 import br.com.nafer.gerenciadorcripto.ui.viewmodel.CarteiraEvent
 import br.com.nafer.gerenciadorcripto.ui.viewmodel.CarteiraViewModel
@@ -40,6 +41,7 @@ fun TelaDeCarteiraRefatorada(
 ) {
     val viewModel = remember { applicationContext.getBean(CarteiraViewModel::class.java) }
     val cacheService = remember { applicationContext.getBean(IconeCacheService::class.java) }
+    val evolucaoService = remember { applicationContext.getBean(EvolucaoPatrimonioService::class.java) }
     val uiState by viewModel.carteiraState.collectAsState()
     val filteredAtivos by viewModel.filteredAtivos.collectAsState()
     
@@ -120,11 +122,14 @@ fun TelaDeCarteiraRefatorada(
                         Spacer(Modifier.height(16.dp))
                     }
                     
-                    // Gráfico de evolução do patrimônio
+                    // Gráfico de evolução do patrimônio usando KoalaPlot
                     item {
-                        Card(elevation = 4.dp, modifier = Modifier.fillMaxWidth().height(if (windowInfo.isExpanded) 300.dp else 220.dp)) {
-                            graficoEvolucaoPatrimonioChart(uiState.historico)
-                        }
+                        val dadosMockados = evolucaoService.obterDadosMockados()
+                        
+                        KoalaPlotPatrimonio(
+                            dados = dadosMockados,
+                            modifier = Modifier.height(if (windowInfo.isExpanded) 450.dp else 400.dp)
+                        )
                     }
                     
                     item {
@@ -163,8 +168,7 @@ fun TelaDeCarteiraRefatorada(
                         Column {
                             Row(
                                 modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 12.dp, horizontal = 16.dp),
+                                    .fillMaxWidth(),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Row(

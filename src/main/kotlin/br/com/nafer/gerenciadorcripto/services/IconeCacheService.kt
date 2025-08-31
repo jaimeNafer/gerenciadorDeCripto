@@ -78,6 +78,7 @@ class IconeCacheService {
      */
     private suspend fun baixarIcone(url: String): ImageBitmap? {
         return try {
+            if(url.isNullOrBlank()) return null
             val bytes = URL(url).readBytes()
             loadImageBitmap(bytes.inputStream())
         } catch (e: Exception) {
