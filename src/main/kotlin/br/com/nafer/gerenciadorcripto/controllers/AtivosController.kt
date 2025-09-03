@@ -3,7 +3,6 @@ package br.com.nafer.gerenciadorcripto.controllers
 import br.com.nafer.gerenciadorcripto.domain.model.dtos.OperacoesDTO
 import br.com.nafer.gerenciadorcripto.service.OperacaoService
 import io.swagger.v3.oas.annotations.Operation
-import io.swagger.v3.oas.annotations.Parameter
 import io.swagger.v3.oas.annotations.media.Content
 import io.swagger.v3.oas.annotations.media.Schema
 import io.swagger.v3.oas.annotations.responses.ApiResponse
@@ -13,9 +12,9 @@ import org.springframework.http.ResponseEntity
 import org.springframework.web.bind.annotation.*
 
 @RestController
-@RequestMapping("/api/ativos")
+@RequestMapping("/v1/ativos")
 @CrossOrigin(origins = ["http://localhost:4200"])
-@Tag(name = "Ativos", description = "Operações relacionadas aos ativos de criptomoedas")
+@Tag(name = "Ativos", description = "Operaï¿½ï¿½es relacionadas aos ativos de criptomoedas")
 class AtivosController(
     private val operacaoService: OperacaoService
 ) {
@@ -23,7 +22,7 @@ class AtivosController(
     @GetMapping
     @Operation(
         summary = "Listar todos os ativos",
-        description = "Retorna uma lista com todas as operações de ativos de criptomoedas cadastradas no sistema"
+        description = "Retorna uma lista com todas as operaï¿½ï¿½es de ativos de criptomoedas cadastradas no sistema"
     )
     @ApiResponses(value = [
         ApiResponse(
@@ -51,13 +50,13 @@ class AtivosController(
 
     @GetMapping("/health")
     @Operation(
-        summary = "Verificar saúde do serviço",
-        description = "Endpoint para verificar se o serviço de ativos está funcionando corretamente"
+        summary = "Verificar saï¿½de do serviï¿½o",
+        description = "Endpoint para verificar se o serviï¿½o de ativos estï¿½ funcionando corretamente"
     )
     @ApiResponses(value = [
         ApiResponse(
             responseCode = "200",
-            description = "Serviço funcionando corretamente",
+            description = "Serviï¿½o funcionando corretamente",
             content = [Content(
                 mediaType = "application/json",
                 schema = Schema(type = "object")

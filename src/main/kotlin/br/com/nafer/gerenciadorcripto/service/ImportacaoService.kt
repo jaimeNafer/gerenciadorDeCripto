@@ -6,7 +6,6 @@ import br.com.nafer.gerenciadorcripto.domain.model.Arquivo
 import br.com.nafer.gerenciadorcripto.domain.model.Carteira
 import br.com.nafer.gerenciadorcripto.domain.model.Corretora
 import br.com.nafer.gerenciadorcripto.domain.model.Operacoes
-import br.com.nafer.gerenciadorcripto.domain.model.Usuario
 import br.com.nafer.gerenciadorcripto.domain.model.dtos.RegistroEmParesDTO
 import br.com.nafer.gerenciadorcripto.domain.model.enums.FinalidadeOperacaoEnum
 import br.com.nafer.gerenciadorcripto.domain.model.enums.TipoOperacaoEnum
@@ -19,7 +18,6 @@ import br.com.nafer.gerenciadorcripto.infrastructure.repository.UsuarioRepositor
 import br.com.nafer.gerenciadorcripto.utils.csvUtils.carregar
 import jakarta.transaction.Transactional
 import org.springframework.stereotype.Service
-import java.lang.RuntimeException
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
@@ -44,18 +42,16 @@ class ImportacaoService(
     ) {
         val usuario = usuarioRepository.findById(idUsuario).orElseThrow { RuntimeException("Usuario não encontrado") }
         val corretora = corretoraRepository.findById(idCorretora).orElseThrow { RuntimeException("Corretora não encontrada") }
-        val carteira = carteiraRepository.filtrarCarteiraPorUsuarioECorretora(usuario, corretora)
-            ?: carteiraRepository.save(Carteira(usuario = usuario, corretora = corretora))
-        val arquivo = arquivoService.salvar(usuario, corretora, arquivoDTO)
-
-        val listaDeRegistros = carregar(arquivoDTO, CsvBinanceDTO::class.java)
-
-        val operacoes = obterOperacoes(
-            listaDeRegistros,
-            carteira,
-            arquivo
-        )
-        operacaoRepository.saveAll(operacoes)
+        carteiraRepository.filtrarCarteiraPorUsuarioECorretora(usuario, corretora)?.let { carteira ->
+            val arquivo = arquivoService.salvar(usuario, corretora, arquivoDTO)
+            val listaDeRegistros = carregar(arquivoDTO, CsvBinanceDTO::class.java)
+            val operacoes = obterOperacoes(
+                listaDeRegistros,
+                carteira,
+                arquivo
+            )
+            operacaoRepository.saveAll(operacoes)
+        } ?: run { Exception("Carteia não encontrada") }
     }
 
     @Transactional
