@@ -12,12 +12,8 @@ data class Arquivo(
     val idArquivo: Int? = null,
 
     @ManyToOne
-    @JoinColumn(name = "id_usuario", nullable = false)
-    val usuario: Usuario,
-
-    @ManyToOne
-    @JoinColumn(name = "id_corretora", nullable = false)
-    val corretora: Corretora,
+    @JoinColumn(name = "id_carteira", nullable = false)
+    val carteira: Carteira,
 
     @Column(name = "nome", nullable = false, length = 200)
     val nome: String,

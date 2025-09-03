@@ -2,7 +2,6 @@ package br.com.nafer.gerenciadorcripto.domain.model
 
 import jakarta.persistence.*
 import java.io.Serializable
-import java.math.BigDecimal
 import java.time.LocalDateTime
 
 @Entity
@@ -13,6 +12,9 @@ data class Carteira(
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "id_carteira")
     val idCarteira: Int? = null,
+
+    @Column(name = "nome")
+    val nome: String,
 
     @ManyToOne
     @JoinColumn(name = "id_usuario", referencedColumnName = "id_usuario")
