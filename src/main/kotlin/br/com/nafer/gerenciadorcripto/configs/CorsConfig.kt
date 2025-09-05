@@ -1,4 +1,4 @@
-﻿package br.com.nafer.gerenciadorcripto.configs
+package br.com.nafer.gerenciadorcripto.configs
 
 import org.springframework.context.annotation.Bean
 import org.springframework.context.annotation.Configuration
@@ -12,7 +12,7 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer
 class CorsConfig : WebMvcConfigurer {
 
     override fun addCorsMappings(registry: CorsRegistry) {
-        registry.addMapping("/api/**")
+        registry.addMapping("/v1/**")
             .allowedOrigins("http://localhost:4200")
             .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")
             .allowedHeaders("*")
@@ -28,7 +28,7 @@ class CorsConfig : WebMvcConfigurer {
         configuration.allowCredentials = true
         
         val source = UrlBasedCorsConfigurationSource()
-        source.registerCorsConfiguration("/api/**", configuration)
+        source.registerCorsConfiguration("/v1/**", configuration)
         return source
     }
 }

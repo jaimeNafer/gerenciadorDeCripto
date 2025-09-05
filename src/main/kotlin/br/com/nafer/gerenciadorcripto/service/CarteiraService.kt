@@ -1,30 +1,27 @@
 package br.com.nafer.gerenciadorcripto.service
 
-import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraResponse
 import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraRequest
+import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraResponse
 import br.com.nafer.gerenciadorcripto.domain.mappers.CarteiraMapper
-import br.com.nafer.gerenciadorcripto.domain.model.Ativos
-import br.com.nafer.gerenciadorcripto.domain.model.Carteira
-import br.com.nafer.gerenciadorcripto.domain.model.Corretora
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.CarteiraRepository
-import br.com.nafer.gerenciadorcripto.domain.model.Usuario
+import br.com.nafer.gerenciadorcripto.domain.model.*
+import br.com.nafer.gerenciadorcripto.exceptions.CarteiraJaExisteException
 import br.com.nafer.gerenciadorcripto.exceptions.NotFoundException
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.AtivosRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.CorretoraRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.UsuarioRepository
+import br.com.nafer.gerenciadorcripto.exceptions.UsuarioJaPossuiCarteiraException
+import br.com.nafer.gerenciadorcripto.infrastructure.repository.*
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 @Service
 class CarteiraService(
-    val carteiraRepository: CarteiraRepository,
-    val moedaService: MoedaService,
-    val ativosRepository: AtivosRepository,
-    val usuarioRepository: UsuarioRepository,
-    val corretoraRepository: CorretoraRepository,
-    val mapper: CarteiraMapper
+    private val carteiraRepository: CarteiraRepository,
+    private val moedaService: MoedaService,
+    private val ativosRepository: AtivosRepository,
+    private val usuarioRepository: UsuarioRepository,
+    private val corretoraRepository: CorretoraRepository,
+    private val userMockService: UserMockService,
+    private val mapper: CarteiraMapper
 ) {
     fun obterCarteiras(): List<CarteiraResponse> {
         return carteiraRepository.findAll()
@@ -33,11 +30,24 @@ class CarteiraService(
     }
 
     fun criarCarteira(request: CarteiraRequest): Carteira {
-        val idUsuario = request.usuario.idUsuario
+        val usuario = userMockService.getUsuarioLogado()
+        
         val idCorretora = request.corretora.idCorretora
-        val usuario = usuarioRepository.findById(idUsuario).orElseThrow { NotFoundException("Usuario não encontrado: $idUsuario") }
-        val corretora = corretoraRepository.findById(idCorretora).orElseThrow {NotFoundException("Corretora: não encontrada: $idCorretora")}
-        val carteira = mapper.toEntity(request, usuario, corretora)
+        val corretora = corretoraRepository.findById(idCorretora)
+            .orElseThrow { NotFoundException("Corretora não encontrada: $idCorretora") }
+        
+        if (carteiraRepository.existsByNome(request.nome)) {
+            throw CarteiraJaExisteException(request.nome)
+        }
+        
+        if (carteiraRepository.existsByUsuarioAndCorretora(usuario, corretora)) {
+            throw UsuarioJaPossuiCarteiraException(corretora.nome)
+        }
+        
+        val carteira = mapper.toEntity(request, usuario, corretora).copy(
+            dataCriacao = LocalDateTime.now()
+        )
+        
         return carteiraRepository.save(carteira)
     }
 

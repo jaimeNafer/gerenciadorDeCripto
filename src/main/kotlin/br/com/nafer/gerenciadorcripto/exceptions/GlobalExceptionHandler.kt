@@ -51,6 +51,21 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail)
     }
 
+    @ExceptionHandler(CarteiraValidationException::class)
+    fun handleCarteiraValidation(
+        ex: CarteiraValidationException,
+        request: WebRequest
+    ): ResponseEntity<ProblemDetail> {
+        logger.warn("Erro de validação de carteira: ${ex.message}")
+        
+        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.message ?: "Erro de validação")
+        problemDetail.type = URI.create("/errors/carteira-validation")
+        problemDetail.title = "Erro de Validação de Carteira"
+        problemDetail.setProperty("timestamp", Instant.now())
+        
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problemDetail)
+    }
+
     @ExceptionHandler(Exception::class)
     fun handleGenericException(
         ex: Exception,
