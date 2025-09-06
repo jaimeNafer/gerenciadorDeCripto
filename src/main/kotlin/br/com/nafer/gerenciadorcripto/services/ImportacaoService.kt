@@ -1,82 +1,48 @@
-package br.com.nafer.gerenciadorcripto.service
+package br.com.nafer.gerenciadorcripto.services
 
-import br.com.nafer.gerenciadorcripto.clients.CoingeckoClient
-import br.com.nafer.gerenciadorcripto.domain.mappers.OperacaoMapper
 import br.com.nafer.gerenciadorcripto.domain.model.Arquivo
-import br.com.nafer.gerenciadorcripto.domain.model.Carteira
 import br.com.nafer.gerenciadorcripto.domain.model.Corretora
 import br.com.nafer.gerenciadorcripto.domain.model.Operacoes
 import br.com.nafer.gerenciadorcripto.domain.model.dtos.RegistroEmParesDTO
 import br.com.nafer.gerenciadorcripto.domain.model.enums.FinalidadeOperacaoEnum
 import br.com.nafer.gerenciadorcripto.domain.model.enums.TipoOperacaoEnum
-import br.com.nafer.gerenciadorcripto.dtos.binance.ArquivoDTO
 import br.com.nafer.gerenciadorcripto.dtos.binance.CsvBinanceDTO
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.CarteiraRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.CorretoraRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.OperacaoRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.UsuarioRepository
-import br.com.nafer.gerenciadorcripto.utils.csvUtils.carregar
-import jakarta.transaction.Transactional
+import br.com.nafer.gerenciadorcripto.utils.csvUtils.parseCsvFromMultipart
 import org.springframework.stereotype.Service
+import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
 import java.time.LocalDateTime
 
 @Service
 class ImportacaoService(
-    private val arquivoService: ArquivoService,
-    private val operacaoRepository: OperacaoRepository,
     private val finalidadesService: FinalidadesService,
-    private val corretoraRepository: CorretoraRepository,
-    private val usuarioRepository: UsuarioRepository,
-    private val carteiraRepository: CarteiraRepository,
     private val moedaService: MoedaService,
-    private val coingeckoClient: CoingeckoClient,
-    private val carteiraService: CarteiraService,
-    private val mapper: OperacaoMapper,
 ) {
-
-    fun processarImportacao(
-        arquivoDTO: ArquivoDTO,
-        idCorretora: Int,
-        idUsuario: Int
-    ) {
-        val usuario = usuarioRepository.findById(idUsuario).orElseThrow { RuntimeException("Usuario não encontrado") }
-        val corretora = corretoraRepository.findById(idCorretora).orElseThrow { RuntimeException("Corretora não encontrada") }
-        carteiraRepository.filtrarCarteiraPorUsuarioECorretora(usuario, corretora)?.let { carteira ->
-            val arquivo = arquivoService.salvar(usuario, corretora, arquivoDTO)
-            val listaDeRegistros = carregar(arquivoDTO, CsvBinanceDTO::class.java)
-            val operacoes = obterOperacoes(
-                listaDeRegistros,
-                carteira,
-                arquivo
-            )
-            operacaoRepository.saveAll(operacoes)
-        } ?: run { Exception("Carteia não encontrada") }
+    fun converterCsvEmOperacoes(
+        arquivo: Arquivo,
+        file: MultipartFile
+    ): List<Operacoes> {
+        val listaDeRegistros = parseCsvFromMultipart(file, CsvBinanceDTO::class.java)
+        return converteRegistrosEmOperacoes(
+            listaDeRegistros,
+            arquivo
+        )
     }
 
-    @Transactional
-    fun processarExclusaoArquivo(arquivoDTO: ArquivoDTO) {
-        val arquivoExistente = arquivoService.obter(arquivoDTO)
-        operacaoRepository.deleteAllByArquivo(arquivoExistente)
-        arquivoService.deletar(arquivoExistente)
-    }
-
-    private fun obterOperacoes(
+    private fun converteRegistrosEmOperacoes(
         listaDeRegistros: List<CsvBinanceDTO>,
-        carteira: Carteira,
         arquivo: Arquivo,
     ): List<Operacoes> {
 
-        val operacoes = FinalidadeOperacaoEnum.values()
-            .flatMap { finalidade -> filtrarOperacaoPorFinalidade(listaDeRegistros, carteira.corretora, finalidade) }
+        val operacoes = FinalidadeOperacaoEnum.entries
+            .flatMap { finalidade -> filtrarOperacaoPorFinalidade(listaDeRegistros, arquivo.carteira.corretora, finalidade) }
         return operacoes.map { registroEmPares ->
-            val finalidade = finalidadesService.obterFinalidadePorCorretoraENome(carteira.corretora, registroEmPares.finalidade)
+            val finalidade = finalidadesService.obterFinalidadePorCorretoraENome(arquivo.carteira.corretora, registroEmPares.finalidade)
             val moedaEntrada =
                 registroEmPares.entrada?.let { regEntrada -> moedaService.obterMoedaPorTicker(regEntrada.coin) }
             val moedaSaida = registroEmPares.saida?.let { regSaida -> moedaService.obterMoedaPorTicker(regSaida.coin) }
             Operacoes(
                 idOperacao = null,
-                carteira = carteira,
                 finalidade = finalidade,
                 arquivo = arquivo,
                 dataOperacaoEntrada = registroEmPares.entrada?.utcTime,

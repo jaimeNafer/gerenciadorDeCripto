@@ -16,10 +16,6 @@ data class Operacoes(
     val idOperacao: Int? = null,
 
     @ManyToOne
-    @JoinColumn(name = "id_carteira", nullable = false)
-    val carteira: Carteira,
-
-    @ManyToOne
     @JoinColumn(name = "id_finalidade", nullable = false)
     val finalidade: Finalidades,
 

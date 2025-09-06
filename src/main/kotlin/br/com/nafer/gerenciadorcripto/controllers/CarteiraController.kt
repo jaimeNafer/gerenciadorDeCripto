@@ -2,7 +2,7 @@ package br.com.nafer.gerenciadorcripto.controllers
 
 import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraRequest
 import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraResponse
-import br.com.nafer.gerenciadorcripto.service.CarteiraService
+import br.com.nafer.gerenciadorcripto.services.CarteiraService
 import io.swagger.v3.oas.annotations.Operation
 import io.swagger.v3.oas.annotations.responses.ApiResponse
 import io.swagger.v3.oas.annotations.responses.ApiResponses

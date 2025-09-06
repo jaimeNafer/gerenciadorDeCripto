@@ -1,8 +1,7 @@
-package br.com.nafer.gerenciadorcripto.service
+package br.com.nafer.gerenciadorcripto.services
 
 import br.com.nafer.gerenciadorcripto.domain.model.Corretora
 import br.com.nafer.gerenciadorcripto.domain.model.Finalidades
-import br.com.nafer.gerenciadorcripto.domain.model.dtos.FinalidadesDTO
 import br.com.nafer.gerenciadorcripto.domain.model.enums.FinalidadeOperacaoEnum
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.FinalidadeRepository
 import org.springframework.stereotype.Service

@@ -1,4 +1,4 @@
-package br.com.nafer.gerenciadorcripto.service
+package br.com.nafer.gerenciadorcripto.services
 
 import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraRequest
 import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraResponse
@@ -19,10 +19,14 @@ class CarteiraService(
     private val moedaService: MoedaService,
     private val ativosRepository: AtivosRepository,
     private val usuarioRepository: UsuarioRepository,
-    private val corretoraRepository: CorretoraRepository,
+    private val corretoraService: CorretoraService,
     private val userMockService: UserMockService,
     private val mapper: CarteiraMapper
 ) {
+
+    fun obterCarteiraOu404(idCarteira: Int): Carteira {
+        return carteiraRepository.findById(idCarteira).orElseThrow { NotFoundException("Carteira: $idCarteira não encontrada") }
+    }
     fun obterCarteiras(): List<CarteiraResponse> {
         return carteiraRepository.findAll()
             .map { mapper.toResponse(it) }
@@ -30,28 +34,24 @@ class CarteiraService(
     }
 
     fun criarCarteira(request: CarteiraRequest): Carteira {
+
         val usuario = userMockService.getUsuarioLogado()
-        
         val idCorretora = request.corretora.idCorretora
-        val corretora = corretoraRepository.findById(idCorretora)
-            .orElseThrow { NotFoundException("Corretora não encontrada: $idCorretora") }
-        
-        if (carteiraRepository.existsByNome(request.nome)) {
-            throw CarteiraJaExisteException(request.nome)
+        val corretora = corretoraService.obterCorretora(idCorretora)
+        val carteira = Carteira(nome = request.nome, usuario = usuario, corretora = corretora)
+
+        if (carteiraRepository.existsByNome(carteira.nome)) {
+            throw CarteiraJaExisteException(carteira.nome)
         }
         
         if (carteiraRepository.existsByUsuarioAndCorretora(usuario, corretora)) {
             throw UsuarioJaPossuiCarteiraException(corretora.nome)
         }
         
-        val carteira = mapper.toEntity(request, usuario, corretora).copy(
-            dataCriacao = LocalDateTime.now()
-        )
-        
-        return carteiraRepository.save(carteira)
+        return carteiraRepository.save(carteira.copy(usuario = usuario, corretora = corretora))
     }
 
-    fun obterCarteira(usuario: List<Usuario>? = null, corretora: List<Corretora>? = null): List<Carteira>? {
+    fun obterCarteirasPorUsuarioECorretora(usuario: List<Usuario>? = null, corretora: List<Corretora>? = null): List<Carteira>? {
         return when {
             usuario?.isNotEmpty() == true && corretora?.isNotEmpty() == true -> carteiraRepository.filtrarCarteiraPorUsuariosECorretoras(
                 usuario,
@@ -106,5 +106,9 @@ class CarteiraService(
 
     private fun criarAtivo(carteira: Carteira) {
 
+    }
+
+    fun removerAtivos(carteira: Carteira, tickers: List<String>) {
+        ativosRepository.deleteAllByCarteiraAndMoedaTickerIn(carteira, tickers)
     }
 }

@@ -8,10 +8,7 @@ import org.mapstruct.Mapping
 
 @Mapper(componentModel = "spring")
 interface CorretoraMapper {
-
     fun toEntity(corretora: CorretoraDTO): Corretora
-    
     fun toDTO(corretora: Corretora): CorretoraDTO
-    
     fun toResponse(corretora: Corretora): CorretoraResponse
 }

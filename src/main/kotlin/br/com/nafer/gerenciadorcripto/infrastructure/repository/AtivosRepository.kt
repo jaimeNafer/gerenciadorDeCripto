@@ -10,4 +10,5 @@ import org.springframework.stereotype.Repository
 interface AtivosRepository : JpaRepository<Ativos, Int> {
     fun findByCarteiraAndMoeda(carteira: Carteira, moeda: Moeda): Ativos?
     fun findByCarteira(carteira: Carteira): List<Ativos>
+    fun deleteAllByCarteiraAndMoedaTickerIn(carteira: Carteira, tickers: List<String>)
 }

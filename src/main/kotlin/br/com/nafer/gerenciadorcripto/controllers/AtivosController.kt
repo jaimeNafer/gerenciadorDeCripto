@@ -1,6 +1,6 @@
 package br.com.nafer.gerenciadorcripto.controllers
 
-import br.com.nafer.gerenciadorcripto.service.OperacaoService
+import br.com.nafer.gerenciadorcripto.services.OperacaoService
 import io.swagger.v3.oas.annotations.tags.Tag
 import org.springframework.web.bind.annotation.CrossOrigin
 import org.springframework.web.bind.annotation.RequestMapping

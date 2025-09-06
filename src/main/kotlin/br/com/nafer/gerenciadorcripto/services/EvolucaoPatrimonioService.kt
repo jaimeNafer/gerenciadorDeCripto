@@ -1,4 +1,4 @@
-package br.com.nafer.gerenciadorcripto.service
+package br.com.nafer.gerenciadorcripto.services
 
 import br.com.nafer.gerenciadorcripto.domain.model.dtos.EvolucaoPatrimonioDTO
 import br.com.nafer.gerenciadorcripto.domain.model.dtos.PontoGraficoPatrimonio
