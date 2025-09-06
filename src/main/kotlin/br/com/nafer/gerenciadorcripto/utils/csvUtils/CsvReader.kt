@@ -1,24 +1,22 @@
 package br.com.nafer.gerenciadorcripto.utils.csvUtils
 
-import br.com.nafer.gerenciadorcripto.domain.model.Arquivo
 import com.opencsv.bean.CsvToBean
 import com.opencsv.bean.CsvToBeanBuilder
-import br.com.nafer.gerenciadorcripto.dtos.binance.ArquivoDTO
-import java.io.FileReader
-import java.io.IOException
+import org.springframework.web.multipart.MultipartFile
+import java.nio.charset.Charset
 
-fun <T> carregar(arquivo: ArquivoDTO, classeT: Class<T>): List<T> {
-    try {
-        FileReader(arquivo.caminho).use { reader ->
-            val csvToBean: CsvToBean<T> = CsvToBeanBuilder<T>(reader)
-                .withSeparator(';')
-                .withType(classeT)
-                .withIgnoreLeadingWhiteSpace(true)
-                .build()
-            return csvToBean.parse()
-        }
-    } catch (e: IOException) {
-        e.printStackTrace()
-        throw RuntimeException("Erro ao ler o CSV: " + e.message)
+fun <T> parseCsvFromMultipart(
+    file: MultipartFile,
+    clazz: Class<T>,
+    separador: Char = ';',
+    charset: Charset = Charsets.UTF_8
+): List<T> {
+    file.inputStream.reader(charset).use { reader ->
+        val csvToBean: CsvToBean<T> = CsvToBeanBuilder<T>(reader)
+            .withType(clazz)
+            .withSeparator(separador)
+            .withIgnoreLeadingWhiteSpace(true)
+            .build()
+        return csvToBean.parse()
     }
 }

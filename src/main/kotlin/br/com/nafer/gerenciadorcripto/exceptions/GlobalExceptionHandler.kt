@@ -8,6 +8,7 @@ import org.springframework.web.bind.MethodArgumentNotValidException
 import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
+import org.springframework.web.servlet.resource.NoResourceFoundException
 import java.net.URI
 import java.time.Instant
 
@@ -49,6 +50,36 @@ class GlobalExceptionHandler {
         problemDetail.setProperty("errors", errors)
         
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail)
+    }
+
+    @ExceptionHandler(CarteiraValidationException::class)
+    fun handleCarteiraValidation(
+        ex: CarteiraValidationException,
+        request: WebRequest
+    ): ResponseEntity<ProblemDetail> {
+        logger.warn("Erro de validação de carteira: ${ex.message}")
+        
+        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.UNPROCESSABLE_ENTITY, ex.message ?: "Erro de validação")
+        problemDetail.type = URI.create("/errors/carteira-validation")
+        problemDetail.title = "Erro de Validação de Carteira"
+        problemDetail.setProperty("timestamp", Instant.now())
+        
+        return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(problemDetail)
+    }
+
+    @ExceptionHandler(NoResourceFoundException::class)
+    fun handleNoResourceFoundException(
+        ex: NoResourceFoundException,
+        request: WebRequest
+    ): ResponseEntity<ProblemDetail> {
+        logger.error("Recurso não encontrado: ${ex.message}", ex)
+
+        val problemDetail = ProblemDetail.forStatusAndDetail(HttpStatus.NOT_FOUND, ex.message ?: "Recurso não encontrado")
+        problemDetail.type = URI.create("/errors/not-found")
+        problemDetail.title = "Recurso Não Encontrado"
+        problemDetail.setProperty("timestamp", Instant.now())
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(problemDetail)
     }
 
     @ExceptionHandler(Exception::class)

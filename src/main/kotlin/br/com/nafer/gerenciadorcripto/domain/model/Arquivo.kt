@@ -1,5 +1,7 @@
 package br.com.nafer.gerenciadorcripto.domain.model
 
+import br.com.nafer.gerenciadorcripto.dtos.binance.ArquivoDTO
+import br.com.nafer.gerenciadorcripto.utils.csvUtils.gerarHasUnico
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -22,8 +24,14 @@ data class Arquivo(
     val hashArquivo: String,
 
     @Column(name = "caminho")
-    val caminho: String,
+    val caminho: String? = null,
 
     @Column(name = "data_criacao")
     val dataCriacao: LocalDateTime = LocalDateTime.now(),
-)
+) {
+    companion object{
+        fun gerarHashUnico(conteudo: ByteArray?): String {
+            return gerarHasUnico(conteudo)
+        }
+    }
+}

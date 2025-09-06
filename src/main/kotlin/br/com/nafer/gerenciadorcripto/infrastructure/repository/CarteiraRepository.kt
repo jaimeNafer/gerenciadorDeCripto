@@ -25,4 +25,8 @@ interface CarteiraRepository : JpaRepository<Carteira, Int> {
 
     @Query("SELECT c FROM Carteira c WHERE c.corretora IN :corretoras")
     fun filtrarAtivosPorCorretoras(@Param("corretoras") corretoras: List<Corretora>?): List<Carteira>?
+
+    fun existsByNome(nome: String): Boolean
+
+    fun existsByUsuarioAndCorretora(usuario: Usuario, corretora: Corretora): Boolean
 }

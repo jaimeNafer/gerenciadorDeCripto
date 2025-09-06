@@ -1,31 +1,32 @@
-package br.com.nafer.gerenciadorcripto.service
+package br.com.nafer.gerenciadorcripto.services
 
-import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraResponse
 import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraRequest
+import br.com.nafer.gerenciadorcripto.controllers.dtos.CarteiraResponse
 import br.com.nafer.gerenciadorcripto.domain.mappers.CarteiraMapper
-import br.com.nafer.gerenciadorcripto.domain.model.Ativos
-import br.com.nafer.gerenciadorcripto.domain.model.Carteira
-import br.com.nafer.gerenciadorcripto.domain.model.Corretora
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.CarteiraRepository
-import br.com.nafer.gerenciadorcripto.domain.model.Usuario
+import br.com.nafer.gerenciadorcripto.domain.model.*
+import br.com.nafer.gerenciadorcripto.exceptions.CarteiraJaExisteException
 import br.com.nafer.gerenciadorcripto.exceptions.NotFoundException
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.AtivosRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.CorretoraRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.UsuarioRepository
+import br.com.nafer.gerenciadorcripto.exceptions.UsuarioJaPossuiCarteiraException
+import br.com.nafer.gerenciadorcripto.infrastructure.repository.*
 import org.springframework.stereotype.Service
 import java.math.BigDecimal
 import java.time.LocalDateTime
-import java.util.UUID
+import java.util.*
 
 @Service
 class CarteiraService(
-    val carteiraRepository: CarteiraRepository,
-    val moedaService: MoedaService,
-    val ativosRepository: AtivosRepository,
-    val usuarioRepository: UsuarioRepository,
-    val corretoraRepository: CorretoraRepository,
-    val mapper: CarteiraMapper
+    private val carteiraRepository: CarteiraRepository,
+    private val moedaService: MoedaService,
+    private val ativosRepository: AtivosRepository,
+    private val usuarioRepository: UsuarioRepository,
+    private val corretoraService: CorretoraService,
+    private val userMockService: UserMockService,
+    private val mapper: CarteiraMapper
 ) {
+
+    fun obterCarteiraOu404(idCarteira: Int): Carteira {
+        return carteiraRepository.findById(idCarteira).orElseThrow { NotFoundException("Carteira: $idCarteira não encontrada") }
+    }
     fun obterCarteiras(): List<CarteiraResponse> {
         return carteiraRepository.findAll()
             .map { mapper.toResponse(it) }
@@ -33,15 +34,24 @@ class CarteiraService(
     }
 
     fun criarCarteira(request: CarteiraRequest): Carteira {
-        val idUsuario = request.usuario.idUsuario
+
+        val usuario = userMockService.getUsuarioLogado()
         val idCorretora = request.corretora.idCorretora
-        val usuario = usuarioRepository.findById(idUsuario).orElseThrow { NotFoundException("Usuario não encontrado: $idUsuario") }
-        val corretora = corretoraRepository.findById(idCorretora).orElseThrow {NotFoundException("Corretora: não encontrada: $idCorretora")}
-        val carteira = mapper.toEntity(request, usuario, corretora)
-        return carteiraRepository.save(carteira)
+        val corretora = corretoraService.obterCorretora(idCorretora)
+        val carteira = Carteira(nome = request.nome, usuario = usuario, corretora = corretora)
+
+        if (carteiraRepository.existsByNome(carteira.nome)) {
+            throw CarteiraJaExisteException(carteira.nome)
+        }
+        
+        if (carteiraRepository.existsByUsuarioAndCorretora(usuario, corretora)) {
+            throw UsuarioJaPossuiCarteiraException(corretora.nome)
+        }
+        
+        return carteiraRepository.save(carteira.copy(usuario = usuario, corretora = corretora))
     }
 
-    fun obterCarteira(usuario: List<Usuario>? = null, corretora: List<Corretora>? = null): List<Carteira>? {
+    fun obterCarteirasPorUsuarioECorretora(usuario: List<Usuario>? = null, corretora: List<Corretora>? = null): List<Carteira>? {
         return when {
             usuario?.isNotEmpty() == true && corretora?.isNotEmpty() == true -> carteiraRepository.filtrarCarteiraPorUsuariosECorretoras(
                 usuario,
@@ -96,5 +106,9 @@ class CarteiraService(
 
     private fun criarAtivo(carteira: Carteira) {
 
+    }
+
+    fun removerAtivos(carteira: Carteira, tickers: List<String>) {
+        ativosRepository.deleteAllByCarteiraAndMoedaTickerIn(carteira, tickers)
     }
 }

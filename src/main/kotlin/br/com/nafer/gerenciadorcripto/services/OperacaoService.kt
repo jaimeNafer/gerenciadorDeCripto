@@ -1,56 +1,69 @@
-package br.com.nafer.gerenciadorcripto.service
+package br.com.nafer.gerenciadorcripto.services
 
 import br.com.nafer.gerenciadorcripto.clients.BinanceApiClient
-import br.com.nafer.gerenciadorcripto.clients.CoingeckoClient
+import br.com.nafer.gerenciadorcripto.controllers.dtos.OperacoesResponse
 import br.com.nafer.gerenciadorcripto.domain.mappers.OperacaoMapper
+import br.com.nafer.gerenciadorcripto.domain.model.Arquivo
 import br.com.nafer.gerenciadorcripto.domain.model.Carteira
-import br.com.nafer.gerenciadorcripto.domain.model.Corretora
 import br.com.nafer.gerenciadorcripto.domain.model.Operacoes
-import br.com.nafer.gerenciadorcripto.domain.model.Usuario
-import br.com.nafer.gerenciadorcripto.domain.model.dtos.OperacoesDTO
 import br.com.nafer.gerenciadorcripto.domain.model.enums.StatusOperacaoEnum
 import br.com.nafer.gerenciadorcripto.domain.model.enums.TipoOperacaoEnum
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.CorretoraRepository
+import br.com.nafer.gerenciadorcripto.exceptions.UnprocessableEntityException
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.OperacaoRepository
-import br.com.nafer.gerenciadorcripto.infrastructure.repository.UsuarioRepository
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
+import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDateTime
 
 @Service
 class OperacaoService(
-    private val arquivoService: ArquivoService,
     private val operacaoRepository: OperacaoRepository,
-    private val finalidadesService: FinalidadesService,
-    private val corretoraRepository: CorretoraRepository,
-    private val usuarioRepository: UsuarioRepository,
-    private val moedaService: MoedaService,
-    private val coingeckoClient: CoingeckoClient,
     private val binanceApiClient: BinanceApiClient,
     private val carteiraService: CarteiraService,
+    private val importacaoService: ImportacaoService,
     private val mapper: OperacaoMapper,
 ) {
-
-    fun listarOperacoes(): List<OperacoesDTO> {
-        processarOperacoesPendentes()
-        return operacaoRepository.findAll().map { mapper.toDTO(it) }
+    fun criarOperacoesPorArquivo(arquivo: Arquivo, file: MultipartFile) {
+        val operacoes = importacaoService.converterCsvEmOperacoes(arquivo, file)
+        operacaoRepository.saveAll(operacoes)
+        processarOperacoesPendentes(arquivo)
     }
-
-    private fun processarOperacoesPendentes() {
-        val operacoesComStatusPendente = operacaoRepository.findAllByStatusOperacao(StatusOperacaoEnum.PENDENTE)
-        val carteirasDistintas = operacoesComStatusPendente.map { it.carteira }
-            .distinct()
-            carteirasDistintas.forEach { carteira ->
-                val operacoesPendentes = operacaoRepository.findAllByCarteiraAndTipoOperacaoIn(carteira, listOf(TipoOperacaoEnum.VENDA, TipoOperacaoEnum.COMPRA, TipoOperacaoEnum.PERMUTA))
-                val listaDeTickersPendenteAjuste = obterTickersComOperacoesPendentes(operacoesPendentes)
-                listaDeTickersPendenteAjuste.forEach { ticker ->
-                    val operacoesPendente = filtrarOperacoesPorTickerDeEntradaESaida(operacoesPendentes, ticker)
-                    calcularPrecoMedioELucroPrejuizo(carteira, operacoesPendente, ticker)
-                }
-            }
+    @Transactional
+    fun removerTodasOperacoesPorArquivo(arquivo: Arquivo) {
+        if (arquivo.idArquivo != null && arquivo.carteira.idCarteira != null) {
+            val tickersEntrada = operacaoRepository.obterMoedaEntradaTickersDistintosPorIdArquivo(arquivo.idArquivo)
+            val tickersSaida = operacaoRepository.obterMoedaSaidaTickersDistintosPorIdArquivo(arquivo.idArquivo)
+            val tickersAfetados = (tickersEntrada + tickersSaida).distinct()
+            operacaoRepository.atualizarStatusPorCarteiraETickers(
+                arquivo.carteira.idCarteira,
+                tickersAfetados,
+                StatusOperacaoEnum.REPROCESSAR
+            )
+            operacaoRepository.deleteAllByArquivoIdArquivo(arquivo.idArquivo)
+            carteiraService.removerAtivos(arquivo.carteira, tickersAfetados)
+            processarOperacoesPendentes(arquivo)
+        } else {
+            throw UnprocessableEntityException("Arquivo e Carteira não podem ter ids nulos")
+        }
     }
-
+    fun listarOperacoes(idCarteira: Int): List<OperacoesResponse> {
+        return operacaoRepository.findAllByArquivoCarteiraIdCarteira(idCarteira).map { mapper.toResponse(it) }
+    }
+    private fun processarOperacoesPendentes(arquivo: Arquivo) {
+        val operacoes = operacaoRepository.findAllByStatusOperacaoNotAndArquivoIdArquivoAndTipoOperacaoIn(
+            StatusOperacaoEnum.PROCESSADA,
+            arquivo.idArquivo!!,
+            listOf(TipoOperacaoEnum.COMPRA, TipoOperacaoEnum.VENDA, TipoOperacaoEnum.PERMUTA)
+        )
+        val listaDeTickersPendenteAjuste = obterTickersDeOperacaoNaoProcessadas(operacoes)
+        listaDeTickersPendenteAjuste.forEach { ticker ->
+            val operacoesPendente = filtrarOperacoesPorTickerDeEntradaESaida(operacoes, ticker)
+            calcularPrecoMedioELucroPrejuizo(arquivo.carteira, operacoesPendente, ticker)
+        }
+    }
+    @Transactional
     private fun calcularPrecoMedioELucroPrejuizo(
         carteira: Carteira,
         operacoes: List<Operacoes>,
@@ -123,7 +136,7 @@ class OperacaoService(
         carteiraService.atualizarAtivo(carteira, ticker, quantidadeTotal, valorTotal, precoMedioTotal, lucroPrejuizoTotal)
     }
 
-    private fun obterTickersComOperacoesPendentes(operacoes: List<Operacoes>): List<String> {
+    private fun obterTickersDeOperacaoNaoProcessadas(operacoes: List<Operacoes>): List<String> {
         val moedasDeEntradaComStatusPendente = operacoes
             .filter { it.statusOperacao == StatusOperacaoEnum.PENDENTE && it.moedaEntrada?.fiat == false }
             .mapNotNull { it.moedaEntrada?.ticker }

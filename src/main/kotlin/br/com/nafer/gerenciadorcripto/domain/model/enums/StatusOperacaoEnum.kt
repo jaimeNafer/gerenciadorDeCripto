@@ -4,5 +4,6 @@ enum class StatusOperacaoEnum {
     PROCESSADA,
     PENDENTE,
     ERRO,
-    NAO_MAPEADA
+    NAO_MAPEADA,
+    REPROCESSAR
 }

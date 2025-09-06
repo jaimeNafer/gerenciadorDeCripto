@@ -1,8 +1,7 @@
-package br.com.nafer.gerenciadorcripto.service
+package br.com.nafer.gerenciadorcripto.services
 
 import br.com.nafer.gerenciadorcripto.clients.CoingeckoClient
 import br.com.nafer.gerenciadorcripto.domain.model.Moeda
-import br.com.nafer.gerenciadorcripto.domain.model.dtos.MoedaDTO
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.MoedaRepository
 import org.springframework.cache.annotation.CacheEvict
 import org.springframework.cache.annotation.Cacheable
