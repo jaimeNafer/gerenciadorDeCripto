@@ -36,6 +36,18 @@ spring:
       allowed-headers: "*"
       allow-credentials: true
 
+  # Limites para upload
+  servlet:
+    multipart:
+      max-file-size: 15MB
+      max-request-size: 15MB
+
+# Local de armazenamento dos uploads
+app:
+  storage:
+    type: filesystem
+    root: "C:/uploads"
+
 # Actuator Configuration
 management:
   endpoints:

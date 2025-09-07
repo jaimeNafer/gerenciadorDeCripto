@@ -1,7 +1,6 @@
 package br.com.nafer.gerenciadorcripto.domain.model
 
-import br.com.nafer.gerenciadorcripto.dtos.binance.ArquivoDTO
-import br.com.nafer.gerenciadorcripto.utils.csvUtils.gerarHasUnico
+import br.com.nafer.gerenciadorcripto.domain.model.enums.StatusArquivoEnum
 import jakarta.persistence.*
 import java.time.LocalDateTime
 
@@ -23,15 +22,17 @@ data class Arquivo(
     @Column(name = "hash_arquivo", nullable = false, length = 45, unique = true)
     val hashArquivo: String,
 
-    @Column(name = "caminho")
-    val caminho: String? = null,
+    @Column(name = "storage_key")
+    val storageKey: String? = null,
 
     @Column(name = "data_criacao")
     val dataCriacao: LocalDateTime = LocalDateTime.now(),
-) {
-    companion object{
-        fun gerarHashUnico(conteudo: ByteArray?): String {
-            return gerarHasUnico(conteudo)
-        }
-    }
-}
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "status", nullable = false, length = 50)
+    val status: StatusArquivoEnum = StatusArquivoEnum.PENDENTE,
+
+    @Column(name = "tamanho_bytes")
+    val tamanhoBytes: Long
+
+    )

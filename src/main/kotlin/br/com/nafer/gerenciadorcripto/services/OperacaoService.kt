@@ -25,8 +25,8 @@ class OperacaoService(
     private val importacaoService: ImportacaoService,
     private val mapper: OperacaoMapper,
 ) {
-    fun criarOperacoesPorArquivo(arquivo: Arquivo, file: MultipartFile) {
-        val operacoes = importacaoService.converterCsvEmOperacoes(arquivo, file)
+    fun criarOperacoesPorArquivo(arquivo: Arquivo, conteudo: ByteArray) {
+        val operacoes = importacaoService.converterCsvEmOperacoes(arquivo, conteudo)
         operacaoRepository.saveAll(operacoes)
         processarOperacoesPendentes(arquivo)
     }
