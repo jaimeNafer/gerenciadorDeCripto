@@ -36,8 +36,14 @@ class CarteiraController(
         ApiResponse(responseCode = "400", description = "Dados inválidos"),
         ApiResponse(responseCode = "422", description = "Carteira já existe ou usuário já possui carteira na corretora")
     ])
-    fun criarCarteira(@Valid @RequestBody request: CarteiraRequest): ResponseEntity<HttpStatus> {
+    fun criarCarteira(@Valid @RequestBody request: CarteiraRequest): ResponseEntity<CarteiraResponse> {
         val carteira = carteiraService.criarCarteira(request)
-        return ResponseEntity.ok(HttpStatus.CREATED)
+        return ResponseEntity.status(HttpStatus.CREATED).body(carteira)
+    }
+
+    @DeleteMapping("/{idCarteira}")
+    fun deletarCarteira(@PathVariable idCarteira: Int): ResponseEntity<HttpStatus> {
+        carteiraService.deletarCarteira(idCarteira)
+        return ResponseEntity.ok(HttpStatus.NO_CONTENT)
     }
 }
