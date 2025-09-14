@@ -7,7 +7,6 @@ import java.time.LocalDateTime
 
 data class OperacoesResponse(
     val idOperacao: Int,
-    val arquivo: ArquivoResponse,
     val finalidade: FinalidadesResponse,
     val dataOperacaoEntrada: LocalDateTime?,
     val moedaEntrada: MoedaResponse?,
@@ -22,7 +21,6 @@ data class OperacoesResponse(
     val taxaMoeda: String? = null,
     val taxaValorBrl: BigDecimal? = null,
     val dataCriacao: LocalDateTime = LocalDateTime.now(),
-    val excluido: Boolean = false,
     val origemRegistro: String,
     val observacao: String? = null,
     val tipoOperacao: TipoOperacaoEnum,
