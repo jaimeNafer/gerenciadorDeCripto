@@ -2,16 +2,17 @@ package br.com.nafer.gerenciadorcripto.utils.csvUtils
 
 import com.opencsv.bean.CsvToBean
 import com.opencsv.bean.CsvToBeanBuilder
-import org.springframework.web.multipart.MultipartFile
+import java.io.ByteArrayInputStream
+import java.io.InputStreamReader
 import java.nio.charset.Charset
 
 fun <T> parseCsvFromMultipart(
-    file: MultipartFile,
+    conteudo: ByteArray,
     clazz: Class<T>,
     separador: Char = ';',
     charset: Charset = Charsets.UTF_8
 ): List<T> {
-    file.inputStream.reader(charset).use { reader ->
+    InputStreamReader(ByteArrayInputStream(conteudo), charset).use { reader ->
         val csvToBean: CsvToBean<T> = CsvToBeanBuilder<T>(reader)
             .withType(clazz)
             .withSeparator(separador)

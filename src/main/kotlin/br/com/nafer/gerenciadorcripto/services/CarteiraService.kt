@@ -9,6 +9,7 @@ import br.com.nafer.gerenciadorcripto.exceptions.NotFoundException
 import br.com.nafer.gerenciadorcripto.exceptions.UsuarioJaPossuiCarteiraException
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.*
 import org.springframework.stereotype.Service
+import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
 import java.time.LocalDateTime
 import java.util.*
@@ -18,10 +19,11 @@ class CarteiraService(
     private val carteiraRepository: CarteiraRepository,
     private val moedaService: MoedaService,
     private val ativosRepository: AtivosRepository,
-    private val usuarioRepository: UsuarioRepository,
     private val corretoraService: CorretoraService,
     private val userMockService: UserMockService,
-    private val mapper: CarteiraMapper
+    private val operacaoRepository: OperacaoRepository,
+    private val arquivoRepository: ArquivoRepository,
+    val mapper: CarteiraMapper
 ) {
 
     fun obterCarteiraOu404(idCarteira: Int): Carteira {
@@ -33,7 +35,7 @@ class CarteiraService(
             .sortedBy { it.nome }
     }
 
-    fun criarCarteira(request: CarteiraRequest): Carteira {
+    fun criarCarteira(request: CarteiraRequest): CarteiraResponse {
 
         val usuario = userMockService.getUsuarioLogado()
         val idCorretora = request.corretora.idCorretora
@@ -47,8 +49,18 @@ class CarteiraService(
         if (carteiraRepository.existsByUsuarioAndCorretora(usuario, corretora)) {
             throw UsuarioJaPossuiCarteiraException(corretora.nome)
         }
-        
-        return carteiraRepository.save(carteira.copy(usuario = usuario, corretora = corretora))
+        val carteiraCopy = carteira.copy(usuario = usuario, corretora = corretora)
+        return mapper.toResponse(carteiraRepository.save(carteiraCopy))
+    }
+
+    @Transactional
+    fun deletarCarteira(idCarteira: Int) {
+        arquivoRepository.findByCarteiraIdCarteira(idCarteira).forEach { arquivo ->
+            operacaoRepository.deleteAllByArquivoIdArquivo(arquivo.idArquivo!!)
+            arquivoRepository.deleteById(arquivo.idArquivo)
+        }
+        ativosRepository.deleteAllByCarteiraIdCarteira(idCarteira)
+        carteiraRepository.deleteById(idCarteira)
     }
 
     fun obterCarteirasPorUsuarioECorretora(usuario: List<Usuario>? = null, corretora: List<Corretora>? = null): List<Carteira>? {

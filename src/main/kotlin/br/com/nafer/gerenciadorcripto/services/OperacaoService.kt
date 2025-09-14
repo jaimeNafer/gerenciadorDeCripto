@@ -1,7 +1,8 @@
 package br.com.nafer.gerenciadorcripto.services
 
 import br.com.nafer.gerenciadorcripto.clients.BinanceApiClient
-import br.com.nafer.gerenciadorcripto.controllers.dtos.OperacoesResponse
+import br.com.nafer.gerenciadorcripto.controllers.dtos.ConsolidadoMensal
+import br.com.nafer.gerenciadorcripto.controllers.dtos.OperacoesWrapperResponse
 import br.com.nafer.gerenciadorcripto.domain.mappers.OperacaoMapper
 import br.com.nafer.gerenciadorcripto.domain.model.Arquivo
 import br.com.nafer.gerenciadorcripto.domain.model.Carteira
@@ -12,10 +13,11 @@ import br.com.nafer.gerenciadorcripto.exceptions.UnprocessableEntityException
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.OperacaoRepository
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
-import org.springframework.web.multipart.MultipartFile
 import java.math.BigDecimal
 import java.math.RoundingMode
 import java.time.LocalDateTime
+import java.time.format.DateTimeFormatter
+import java.util.*
 
 @Service
 class OperacaoService(
@@ -25,8 +27,8 @@ class OperacaoService(
     private val importacaoService: ImportacaoService,
     private val mapper: OperacaoMapper,
 ) {
-    fun criarOperacoesPorArquivo(arquivo: Arquivo, file: MultipartFile) {
-        val operacoes = importacaoService.converterCsvEmOperacoes(arquivo, file)
+    fun criarOperacoesPorArquivo(arquivo: Arquivo, conteudo: ByteArray) {
+        val operacoes = importacaoService.converterCsvEmOperacoes(arquivo, conteudo)
         operacaoRepository.saveAll(operacoes)
         processarOperacoesPendentes(arquivo)
     }
@@ -48,8 +50,22 @@ class OperacaoService(
             throw UnprocessableEntityException("Arquivo e Carteira não podem ter ids nulos")
         }
     }
-    fun listarOperacoes(idCarteira: Int): List<OperacoesResponse> {
-        return operacaoRepository.findAllByArquivoCarteiraIdCarteira(idCarteira).map { mapper.toResponse(it) }
+    fun listarOperacoes(idCarteira: Int): List<OperacoesWrapperResponse> {
+        val operacoes = operacaoRepository.findAllByArquivoCarteiraIdCarteira(idCarteira)
+        val mapMesAno = operacoes.groupBy { it.dataOperacaoEntrada?.mapMesAno() ?: it.dataOperacaoSaida?.mapMesAno() }
+        return mapMesAno.mapNotNull { (mesAno, operacoes) ->
+            val movimentacoes = operacoes.filter { it.tipoOperacao in TipoOperacaoEnum.tipoMovimentacoes() }
+            val numeroTotalMovimentacoes = movimentacoes.size
+            val valorTotalMovimentacoes = movimentacoes.map { mov -> mov.valorBrl?.abs() }.fold(BigDecimal.ZERO, BigDecimal::add)
+            val valorTotalCompras = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.COMPRA }.map { mov -> mov.quantidadeSaida }.fold(BigDecimal.ZERO, BigDecimal::add)
+            val valorTotalVendas = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.VENDA }.map { mov -> mov.quantidadeEntrada?.abs() }.fold(BigDecimal.ZERO, BigDecimal::add)
+            val valorTotalPermuta = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.PERMUTA }.map { mov -> mov.valorBrl?.abs() }.fold(BigDecimal.ZERO, BigDecimal::add)
+            val valorTotalLucroPrejuizo = movimentacoes.map { mov -> mov.lucroPrejuizo }.fold(BigDecimal.ZERO, BigDecimal::add)
+            val deveDeclararIN1888 = valorTotalMovimentacoes > BigDecimal("100")
+            val consoliadoMensal = ConsolidadoMensal(numeroTotalMovimentacoes, valorTotalMovimentacoes, valorTotalCompras, valorTotalVendas, valorTotalPermuta, valorTotalLucroPrejuizo, deveDeclararIN1888)
+            val operacoesResponse = operacoes.map { operacao -> mapper.toResponse(operacao) }.sortedBy { it.dataOperacaoEntrada ?: it.dataOperacaoSaida }
+            OperacoesWrapperResponse(mesAno!!, consoliadoMensal, operacoesResponse)
+        }
     }
     private fun processarOperacoesPendentes(arquivo: Arquivo) {
         val operacoes = operacaoRepository.findAllByStatusOperacaoNotAndArquivoIdArquivoAndTipoOperacaoIn(
@@ -152,5 +168,11 @@ class OperacaoService(
 
     private fun obterHistoricoValorBrl(data: LocalDateTime?): BigDecimal? {
         return BigDecimal.ZERO
+    }
+
+    private fun LocalDateTime.mapMesAno(): String {
+        val ptBr = Locale.of("pt", "BR")
+        val dataFormatada = this.format(DateTimeFormatter.ofPattern("LLLL/yyyy", ptBr))
+        return dataFormatada.replaceFirstChar { it.titlecase(ptBr) }
     }
 }

@@ -20,9 +20,9 @@ class ImportacaoService(
 ) {
     fun converterCsvEmOperacoes(
         arquivo: Arquivo,
-        file: MultipartFile
+        conteudo: ByteArray
     ): List<Operacoes> {
-        val listaDeRegistros = parseCsvFromMultipart(file, CsvBinanceDTO::class.java)
+        val listaDeRegistros = parseCsvFromMultipart(conteudo, CsvBinanceDTO::class.java)
         return converteRegistrosEmOperacoes(
             listaDeRegistros,
             arquivo

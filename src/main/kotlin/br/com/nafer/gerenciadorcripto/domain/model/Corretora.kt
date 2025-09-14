@@ -20,6 +20,12 @@ data class Corretora(
     @Column(name = "site", length = 300)
     val site: String? = null,
 
+    @Column(name = "endereco", length = 300)
+    val endereco: String? = null,
+
+    @Column(name = "exchange_nacional", nullable = false)
+    val exchange_nacional: Boolean = false,
+
     @Column(name = "excluido", nullable = false)
     val excluido: Boolean = false,
 ): Serializable

@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.ControllerAdvice
 import org.springframework.web.bind.annotation.ExceptionHandler
 import org.springframework.web.context.request.WebRequest
 import org.springframework.web.servlet.resource.NoResourceFoundException
+import java.lang.RuntimeException
 import java.net.URI
 import java.time.Instant
 
@@ -52,9 +53,9 @@ class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(problemDetail)
     }
 
-    @ExceptionHandler(CarteiraValidationException::class)
+    @ExceptionHandler(CarteiraValidationException::class, UnprocessableEntityException::class)
     fun handleCarteiraValidation(
-        ex: CarteiraValidationException,
+        ex: RuntimeException,
         request: WebRequest
     ): ResponseEntity<ProblemDetail> {
         logger.warn("Erro de validação de carteira: ${ex.message}")
