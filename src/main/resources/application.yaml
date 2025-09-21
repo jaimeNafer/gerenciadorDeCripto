@@ -47,6 +47,9 @@ app:
   storage:
     type: filesystem
     root: "C:/uploads"
+config:
+  in1888:
+    valorLimite: 30000
 
 # Actuator Configuration
 management:

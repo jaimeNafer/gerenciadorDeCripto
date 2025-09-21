@@ -6,9 +6,10 @@ enum class TipoOperacaoEnum(val descricao: String) {
     VENDA("Venda"),
     PERMUTA("Permuta"),
     SAQUE("Saque"),
+    SAQUE_FIAT("Saque"),
     TRANSFERENCIA("Transferencia"),
     OUTROS("-");
     companion object {
-        fun tipoMovimentacoes() = listOf(COMPRA, VENDA, PERMUTA)
+        fun tipoMovimentacoes() = listOf(COMPRA, VENDA, PERMUTA, DEPOSITO)
     }
 }

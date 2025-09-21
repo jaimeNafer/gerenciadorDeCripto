@@ -139,6 +139,10 @@ class ImportacaoService(
             ehFinalidadeConversaoOuCompraFiat(finalidade) && entrada?.coin?.uppercase() != "BRL" && saida?.coin?.uppercase() != "BRL" -> TipoOperacaoEnum.PERMUTA
             ehFinalidadeConversaoOuCompraFiat(finalidade) && entrada?.coin?.uppercase() == "BRL" && saida?.coin?.uppercase() != "BRL" -> TipoOperacaoEnum.VENDA
             ehFinalidadeConversaoOuCompraFiat(finalidade) && entrada?.coin?.uppercase() != "BRL" && saida?.coin?.uppercase() == "BRL" -> TipoOperacaoEnum.COMPRA
+            ehFinalidadeTransferencia(finalidade) -> TipoOperacaoEnum.TRANSFERENCIA
+            ehFinalidadeDeposito(finalidade) -> TipoOperacaoEnum.DEPOSITO
+            ehFinalidadeSaque(finalidade) -> TipoOperacaoEnum.SAQUE
+            ehFinalidadeSaqueFiat(finalidade) -> TipoOperacaoEnum.SAQUE_FIAT
             else -> TipoOperacaoEnum.OUTROS
         }
     }
@@ -148,10 +152,26 @@ class ImportacaoService(
     }
 
     private fun ehFinalidadeConversaoOuCompraFiat(finalidade: FinalidadeOperacaoEnum): Boolean {
-        return finalidade == FinalidadeOperacaoEnum.CONVERSAO || finalidade == FinalidadeOperacaoEnum.COMPRA_FIAT
+        return finalidade == FinalidadeOperacaoEnum.CONVERSAO || ehFinalidadeCompraFiat(finalidade)
     }
 
     private fun ehFinalidadeTransferencia(finalidade: FinalidadeOperacaoEnum): Boolean {
         return finalidade == FinalidadeOperacaoEnum.TRANSFERENCIA
+    }
+
+    private fun ehFinalidadeDeposito(finalidade: FinalidadeOperacaoEnum): Boolean {
+        return finalidade == FinalidadeOperacaoEnum.DEPOSITO
+    }
+
+    private fun ehFinalidadeSaque(finalidade: FinalidadeOperacaoEnum): Boolean {
+        return finalidade == FinalidadeOperacaoEnum.SAQUE
+    }
+
+    private fun ehFinalidadeSaqueFiat(finalidade: FinalidadeOperacaoEnum): Boolean {
+        return finalidade == FinalidadeOperacaoEnum.SAQUE_FIAT
+    }
+
+    private fun ehFinalidadeCompraFiat(finalidade: FinalidadeOperacaoEnum): Boolean {
+        return finalidade == FinalidadeOperacaoEnum.COMPRA_FIAT
     }
 }

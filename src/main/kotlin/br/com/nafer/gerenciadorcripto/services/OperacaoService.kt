@@ -11,6 +11,7 @@ import br.com.nafer.gerenciadorcripto.domain.model.enums.StatusOperacaoEnum
 import br.com.nafer.gerenciadorcripto.domain.model.enums.TipoOperacaoEnum
 import br.com.nafer.gerenciadorcripto.exceptions.UnprocessableEntityException
 import br.com.nafer.gerenciadorcripto.infrastructure.repository.OperacaoRepository
+import org.springframework.beans.factory.annotation.Value
 import org.springframework.stereotype.Service
 import org.springframework.transaction.annotation.Transactional
 import java.math.BigDecimal
@@ -26,6 +27,8 @@ class OperacaoService(
     private val carteiraService: CarteiraService,
     private val importacaoService: ImportacaoService,
     private val mapper: OperacaoMapper,
+    @Value("\${config.in1888.valorLimite}")
+    private val valorLimiteIn1888: String
 ) {
     fun criarOperacoesPorArquivo(arquivo: Arquivo, conteudo: ByteArray) {
         val operacoes = importacaoService.converterCsvEmOperacoes(arquivo, conteudo)
@@ -56,12 +59,13 @@ class OperacaoService(
         return mapMesAno.mapNotNull { (mesAno, operacoes) ->
             val movimentacoes = operacoes.filter { it.tipoOperacao in TipoOperacaoEnum.tipoMovimentacoes() }
             val numeroTotalMovimentacoes = movimentacoes.size
-            val valorTotalMovimentacoes = movimentacoes.map { mov -> mov.valorBrl?.abs() }.fold(BigDecimal.ZERO, BigDecimal::add)
-            val valorTotalCompras = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.COMPRA }.map { mov -> mov.quantidadeSaida }.fold(BigDecimal.ZERO, BigDecimal::add)
+            val valorTotalDepositos = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.DEPOSITO }.map { mov -> mov.quantidadeEntrada }.fold(BigDecimal.ZERO, BigDecimal::add)
+            val valorTotalCompras = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.COMPRA }.map { mov -> mov.quantidadeSaida?.abs() }.fold(BigDecimal.ZERO, BigDecimal::add)
             val valorTotalVendas = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.VENDA }.map { mov -> mov.quantidadeEntrada?.abs() }.fold(BigDecimal.ZERO, BigDecimal::add)
             val valorTotalPermuta = movimentacoes.filter { it.tipoOperacao == TipoOperacaoEnum.PERMUTA }.map { mov -> mov.valorBrl?.abs() }.fold(BigDecimal.ZERO, BigDecimal::add)
             val valorTotalLucroPrejuizo = movimentacoes.map { mov -> mov.lucroPrejuizo }.fold(BigDecimal.ZERO, BigDecimal::add)
-            val deveDeclararIN1888 = valorTotalMovimentacoes > BigDecimal("100")
+            val valorTotalMovimentacoes = valorTotalDepositos.add(valorTotalCompras).add(valorTotalVendas).add(valorTotalPermuta)
+            val deveDeclararIN1888 = valorTotalMovimentacoes >= BigDecimal(valorLimiteIn1888)
             val consoliadoMensal = ConsolidadoMensal(numeroTotalMovimentacoes, valorTotalMovimentacoes, valorTotalCompras, valorTotalVendas, valorTotalPermuta, valorTotalLucroPrejuizo, deveDeclararIN1888)
             val operacoesResponse = operacoes.map { operacao -> mapper.toResponse(operacao) }.sortedBy { it.dataOperacaoEntrada ?: it.dataOperacaoSaida }
             OperacoesWrapperResponse(mesAno!!, consoliadoMensal, operacoesResponse)
